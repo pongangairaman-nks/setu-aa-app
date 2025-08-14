@@ -35,3 +35,15 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+*.env
+backend/.env*
+backend/*.env*
+
+# Log files
+*.log
+backend/logs/
+logs/
