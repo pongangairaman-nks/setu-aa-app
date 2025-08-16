@@ -13,6 +13,12 @@ class ApiClient {
         'Content-Type': 'application/json',
         'User-Agent': `${ENV.APP_NAME}/${ENV.VERSION}`,
       },
+      // HTTPS configuration for production
+      ...(ENV.IS_PRODUCTION && {
+        httpsAgent: {
+          rejectUnauthorized: true, // Ensure SSL certificate validation
+        },
+      }),
     });
 
     this.setupInterceptors();
@@ -80,6 +86,10 @@ class ApiClient {
           console.error('⏰ Request timeout - please check your connection');
         } else if (error.code === 'NETWORK_ERROR') {
           console.error('🌐 Network error - please check your internet connection');
+        } else if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+          console.error('🔒 SSL Certificate error - please contact support');
+        } else if (error.code === 'ENOTFOUND') {
+          console.error('🌐 Domain not found - please check your internet connection');
         }
 
         return Promise.reject(error);
@@ -118,8 +128,19 @@ class ApiClient {
       const response = await this.client.get('/health');
       return response.status === 200;
     } catch (error) {
+      console.error('Health check failed:', error);
       return false;
     }
+  }
+
+  // Get current API base URL
+  public getBaseUrl(): string {
+    return ENV.API_BASE_URL;
+  }
+
+  // Check if using HTTPS
+  public isSecure(): boolean {
+    return ENV.API_BASE_URL.startsWith('https://');
   }
 }
 

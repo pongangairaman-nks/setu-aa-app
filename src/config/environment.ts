@@ -8,7 +8,7 @@ const DEV_CONFIG = {
 };
 
 const PROD_CONFIG = {
-  API_BASE_URL: 'http://13.233.96.134:5000/api',
+  API_BASE_URL: 'https://hedgrpay.com/api',
   ENABLE_LOGGING: false,
   API_TIMEOUT: 15000,
 };

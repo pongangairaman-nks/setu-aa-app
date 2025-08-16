@@ -1,229 +1,233 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { setuApi } from '../../services/api/setuApi';
 import { apiClient } from '../../services/api/apiClient';
 import { ENV } from '../../config/environment';
-import { Button } from './Button';
+import { ConfigTestStyles } from './ConfigTest.styles';
 
-interface ConfigTestProps {
-  onComplete?: (success: boolean) => void;
-}
-
-export const ConfigTest: React.FC<ConfigTestProps> = ({ onComplete }) => {
+export const ConfigTest: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [testResults, setTestResults] = useState<{
-    backend: boolean;
-    setu: boolean;
-    webhook: boolean;
-  }>({
-    backend: false,
-    setu: false,
-    webhook: false,
-  });
+  const [results, setResults] = useState<string[]>([]);
 
-  const testBackendConnection = async () => {
+  const addResult = (message: string) => {
+    setResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+  };
+
+  const clearResults = () => {
+    setResults([]);
+  };
+
+  const testHealthCheck = async () => {
+    setIsLoading(true);
+    addResult('🏥 Testing health check...');
+    
     try {
-      setIsLoading(true);
-      const isHealthy = await apiClient.healthCheck();
-      setTestResults(prev => ({ ...prev, backend: isHealthy }));
+      const health = await setuApi.healthCheck();
+      addResult(`✅ Health check successful: ${JSON.stringify(health)}`);
+    } catch (error: any) {
+      addResult(`❌ Health check failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testApiConfiguration = async () => {
+    setIsLoading(true);
+    addResult('🔧 Testing API configuration...');
+    
+    try {
+      const apiInfo = setuApi.getApiInfo();
+      addResult(`📡 API Base URL: ${apiInfo.baseUrl}`);
+      addResult(`🔒 HTTPS Enabled: ${apiInfo.isSecure ? 'Yes' : 'No'}`);
+      addResult(`🌍 Environment: ${apiInfo.environment}`);
+      addResult(`⏰ Timeout: ${apiInfo.timeout}ms`);
       
-      if (isHealthy) {
-        Alert.alert('✅ Success', 'Backend connection is working!');
-      } else {
-        Alert.alert('❌ Error', 'Backend connection failed');
-      }
-    } catch (error) {
-      setTestResults(prev => ({ ...prev, backend: false }));
-      Alert.alert('❌ Error', 'Backend connection failed');
+      // Test if the base URL is accessible
+      const isHealthy = await apiClient.healthCheck();
+      addResult(`🏥 Backend Health: ${isHealthy ? 'Online' : 'Offline'}`);
+    } catch (error: any) {
+      addResult(`❌ API configuration test failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const testSetuConfiguration = async () => {
+    setIsLoading(true);
+    addResult('🔐 Testing Setu configuration...');
+    
     try {
-      setIsLoading(true);
-      const response = await apiClient.get('/test-setu');
-      const isConfigured = response.success;
-      setTestResults(prev => ({ ...prev, setu: isConfigured }));
+      addResult(`🏛️ Setu Base URL: ${ENV.SETU_BASE_URL}`);
+      addResult(`🆔 Client ID: ${ENV.SETU_CLIENT_ID}`);
+      addResult(`📦 Product ID: ${ENV.SETU_PRODUCT_ID}`);
       
-      if (isConfigured) {
-        Alert.alert('✅ Success', 'Setu configuration is working!');
-      } else {
-        Alert.alert('❌ Error', 'Setu configuration failed');
+      // Test Setu configuration endpoint
+      const response = await fetch(`${ENV.API_BASE_URL.replace('/api', '')}/test-setu`);
+      const data = await response.json();
+      addResult(`🧪 Setu Config Test: ${data.success ? 'Success' : 'Failed'}`);
+      if (!data.success) {
+        addResult(`⚠️ Setu Config Error: ${data.error}`);
       }
-    } catch (error) {
-      setTestResults(prev => ({ ...prev, setu: false }));
-      Alert.alert('❌ Error', 'Setu configuration test failed');
+    } catch (error: any) {
+      addResult(`❌ Setu configuration test failed: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testCallbackEndpoint = async () => {
+    setIsLoading(true);
+    addResult('🔄 Testing callback endpoint...');
+    
+    try {
+      const callbackUrl = `${ENV.API_BASE_URL.replace('/api', '')}/api/consents/callback?consentId=test123&status=ACTIVE`;
+      addResult(`📞 Callback URL: ${callbackUrl}`);
+      
+      const response = await fetch(callbackUrl);
+      addResult(`📡 Callback Status: ${response.status} ${response.statusText}`);
+      
+      if (response.status === 302) {
+        const location = response.headers.get('location');
+        addResult(`🔄 Redirect Location: ${location}`);
+      }
+    } catch (error: any) {
+      addResult(`❌ Callback endpoint test failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const testWebhookEndpoint = async () => {
+    setIsLoading(true);
+    addResult('📡 Testing webhook endpoint...');
+    
     try {
-      setIsLoading(true);
-      const testPayload = {
+      const webhookUrl = `${ENV.API_BASE_URL.replace('/api', '')}/api/webhooks/setu`;
+      addResult(`📞 Webhook URL: ${webhookUrl}`);
+      
+      const webhookData = {
         type: 'CONSENT_STATUS_UPDATE',
-        consentId: 'test-config-check',
-        success: true,
-        data: { status: 'ACTIVE' },
-        timestamp: new Date().toISOString(),
+        consentId: 'test123',
+        status: 'ACTIVE',
+        timestamp: new Date().toISOString()
       };
       
-      const response = await apiClient.post('/webhooks/setu', testPayload);
-      const isWorking = response.success;
-      setTestResults(prev => ({ ...prev, webhook: isWorking }));
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookData)
+      });
       
-      if (isWorking) {
-        Alert.alert('✅ Success', 'Webhook endpoint is working!');
-      } else {
-        Alert.alert('❌ Error', 'Webhook endpoint failed');
-      }
-    } catch (error) {
-      setTestResults(prev => ({ ...prev, webhook: false }));
-      Alert.alert('❌ Error', 'Webhook endpoint test failed');
+      const data = await response.json();
+      addResult(`📡 Webhook Status: ${response.status} ${response.statusText}`);
+      addResult(`📄 Webhook Response: ${JSON.stringify(data)}`);
+    } catch (error: any) {
+      addResult(`❌ Webhook endpoint test failed: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
   const runAllTests = async () => {
-    await testBackendConnection();
-    await testSetuConfiguration();
-    await testWebhookEndpoint();
+    setIsLoading(true);
+    clearResults();
+    addResult('🚀 Starting comprehensive configuration test...');
+    addResult(`🌍 Environment: ${ENV.NODE_ENV}`);
+    addResult(`🔗 Domain: hedgrpay.com`);
+    addResult(`🔒 HTTPS: ${ENV.API_BASE_URL.startsWith('https://') ? 'Enabled' : 'Disabled'}`);
+    addResult('');
     
-    const allPassed = Object.values(testResults).every(result => result);
-    onComplete?.(allPassed);
+    await testApiConfiguration();
+    addResult('');
+    await testHealthCheck();
+    addResult('');
+    await testSetuConfiguration();
+    addResult('');
+    await testCallbackEndpoint();
+    addResult('');
+    await testWebhookEndpoint();
+    addResult('');
+    addResult('✅ All tests completed!');
+    setIsLoading(false);
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Configuration Test</Text>
+    <ScrollView style={ConfigTestStyles.container}>
+      <Text style={ConfigTestStyles.title}>🔧 Configuration Test</Text>
+      <Text style={ConfigTestStyles.subtitle}>Test your HTTPS endpoints with hedgrpay.com</Text>
       
-      <View style={styles.configInfo}>
-        <Text style={styles.label}>Backend URL:</Text>
-        <Text style={styles.value}>{ENV.API_BASE_URL}</Text>
-        
-        <Text style={styles.label}>Environment:</Text>
-        <Text style={styles.value}>{ENV.NODE_ENV}</Text>
-        
-        <Text style={styles.label}>App Version:</Text>
-        <Text style={styles.value}>{ENV.VERSION}</Text>
-      </View>
-
-      <View style={styles.testSection}>
-        <Text style={styles.sectionTitle}>Connection Tests</Text>
-        
-        <View style={styles.testItem}>
-          <Text style={[styles.testStatus, testResults.backend ? styles.success : styles.error]}>
-            {testResults.backend ? '✅' : '❌'} Backend Connection
-          </Text>
-          <Button 
-            title="Test Backend" 
-            onPress={testBackendConnection}
-            disabled={isLoading}
-            style={styles.testButton}
-          />
-        </View>
-
-        <View style={styles.testItem}>
-          <Text style={[styles.testStatus, testResults.setu ? styles.success : styles.error]}>
-            {testResults.setu ? '✅' : '❌'} Setu Configuration
-          </Text>
-          <Button 
-            title="Test Setu" 
-            onPress={testSetuConfiguration}
-            disabled={isLoading}
-            style={styles.testButton}
-          />
-        </View>
-
-        <View style={styles.testItem}>
-          <Text style={[styles.testStatus, testResults.webhook ? styles.success : styles.error]}>
-            {testResults.webhook ? '✅' : '❌'} Webhook Endpoint
-          </Text>
-          <Button 
-            title="Test Webhook" 
-            onPress={testWebhookEndpoint}
-            disabled={isLoading}
-            style={styles.testButton}
-          />
-        </View>
-
-        <Button 
-          title="Run All Tests" 
+      <View style={ConfigTestStyles.buttonContainer}>
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.primaryButton]} 
           onPress={runAllTests}
           disabled={isLoading}
-          style={styles.runAllButton}
-        />
+        >
+          <Text style={ConfigTestStyles.buttonText}>
+            {isLoading ? '🔄 Running Tests...' : '🚀 Run All Tests'}
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.secondaryButton]} 
+          onPress={testApiConfiguration}
+          disabled={isLoading}
+        >
+          <Text style={ConfigTestStyles.buttonText}>🔧 API Config</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.secondaryButton]} 
+          onPress={testHealthCheck}
+          disabled={isLoading}
+        >
+          <Text style={ConfigTestStyles.buttonText}>🏥 Health Check</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.secondaryButton]} 
+          onPress={testSetuConfiguration}
+          disabled={isLoading}
+        >
+          <Text style={ConfigTestStyles.buttonText}>🔐 Setu Config</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.secondaryButton]} 
+          onPress={testCallbackEndpoint}
+          disabled={isLoading}
+        >
+          <Text style={ConfigTestStyles.buttonText}>🔄 Callback</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.secondaryButton]} 
+          onPress={testWebhookEndpoint}
+          disabled={isLoading}
+        >
+          <Text style={ConfigTestStyles.buttonText}>📡 Webhook</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[ConfigTestStyles.button, ConfigTestStyles.clearButton]} 
+          onPress={clearResults}
+        >
+          <Text style={ConfigTestStyles.buttonText}>🗑️ Clear Results</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+      
+      <View style={ConfigTestStyles.resultsContainer}>
+        <Text style={ConfigTestStyles.resultsTitle}>📋 Test Results:</Text>
+        {results.map((result, index) => (
+          <Text key={index} style={ConfigTestStyles.resultText}>
+            {result}
+          </Text>
+        ))}
+        {results.length === 0 && (
+          <Text style={ConfigTestStyles.noResults}>No test results yet. Run a test to see results.</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  configInfo: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 5,
-  },
-  value: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 15,
-    fontFamily: 'monospace',
-  },
-  testSection: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderRadius: 8,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-  testItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  testStatus: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  success: {
-    color: '#4CAF50',
-  },
-  error: {
-    color: '#F44336',
-  },
-  testButton: {
-    minWidth: 100,
-  },
-  runAllButton: {
-    marginTop: 20,
-    backgroundColor: '#2196F3',
-  },
-});
