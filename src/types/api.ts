@@ -1,27 +1,99 @@
-// Consent API Types
+// Consent API Types - Updated to match Setu API requirements
 export interface ConsentRequest {
-  fipId: string;
-  dataLife: number;
-  permissions: string[];
-  fetchType: 'PERIODIC' | 'ONETIME';
-  frequency?: {
-    unit: 'MONTH' | 'DAY' | 'WEEK';
+  // Mandatory fields as per Setu documentation
+  consentDuration?: {
+    unit: 'MONTH' | 'YEAR' | 'DAY';
+    value: string;
+  };
+  consentDateRange?: {
+    startDate: string;
+    endDate: string;
+  };
+  consentMode: 'VIEW' | 'STORE' | 'QUERY' | 'STREAM';
+  fetchType: 'ONETIME' | 'PERIODIC';
+  consentTypes: Array<'PROFILE' | 'SUMMARY' | 'TRANSACTIONS'>;
+  fiTypes: Array<'DEPOSIT' | 'MUTUAL_FUNDS' | 'INSURANCE_POLICIES' | 'TERM_DEPOSIT' | 'RECURRING_DEPOSIT' | 'SIP' | 'GOVT_SECURITIES' | 'EQUITIES' | 'BONDS' | 'DEBENTURES' | 'ETF'>;
+  vua: string; // Virtual user address - mobile number or mobile@handle
+  purpose: {
+    code: '101' | '102' | '103' | '104' | '105';
+    refUri: string;
+    text: string;
+    category?: {
+      type: string;
+    };
+  };
+  dataLife: {
+    unit: 'MONTH' | 'YEAR' | 'DAY' | 'INF';
     value: number;
   };
+  frequency: {
+    unit: 'HOURLY' | 'DAILY' | 'MONTHLY' | 'YEARLY';
+    value: number;
+  };
+  redirectUrl: string;
+  
+  // Optional fields
   dataRange?: {
     from: string;
     to: string;
   };
-  fipName?: string;
-  redirectUrl?: string;
+  dataFilter?: Array<{
+    type: string;
+    operator: '>' | '<' | '<=' | '>=';
+    value: number;
+  }>;
+  context?: Array<{
+    key: string;
+    value: string;
+  }>;
+  additionalParams?: {
+    tags?: string[];
+  };
+  enableAdditionalPhoneNumber?: boolean;
 }
 
 export interface ConsentResponse {
-  consentId: string;
-  consentUrl: string;
-  status: string;
-  createdAt: string;
-  expiresAt: string;
+  id: string;
+  url: string;
+  status: 'PENDING' | 'ACTIVE' | 'REVOKED' | 'EXPIRED' | 'REJECTED';
+  detail?: {
+    consentStart: string;
+    consentExpiry: string;
+    fiTypes: string[];
+    fetchType: string;
+    purpose: {
+      category: {
+        type: string;
+      };
+      refUri: string;
+      code: string;
+      text: string;
+    };
+    vua: string;
+    dataRange?: {
+      from: string;
+      to: string;
+    };
+    consentTypes: string[];
+    consentMode: string;
+    frequency: {
+      value: number;
+      unit: string;
+    };
+    dataLife: {
+      value: number;
+      unit: string;
+    };
+  };
+  redirectUrl?: string;
+  context: any[];
+  usage?: {
+    count: string;
+    lastUsed: string | null;
+  };
+  tags?: string[];
+  traceId: string;
+  accountsLinked?: any[];
 }
 
 // Data Fetching API Types
@@ -69,8 +141,10 @@ export interface TransactionResponse {
 
 // Webhook Types
 export interface WebhookPayload {
-  type: 'CONSENT' | 'DATA';
-  data: any;
+  type: 'CONSENT_STATUS_UPDATE' | 'DATA_FETCH_COMPLETE' | 'DATA_FETCH_FAILED';
+  consentId?: string;
+  status?: string;
+  data?: any;
   timestamp: string;
   signature?: string;
 }

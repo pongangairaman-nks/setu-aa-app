@@ -1,4 +1,5 @@
 import { apiClient } from './apiClient';
+import { setuDirectApiClient } from './setuDirectApi';
 import { API_ENDPOINTS, buildUrl } from './endpoints';
 import { 
   ConsentRequest, 
@@ -10,13 +11,14 @@ import {
 import { ENV } from '../../config/environment';
 
 export class SetuApi {
-  // Consent Management
+  // Consent Management - Route through backend to avoid CORS
   async createConsentRequest(request: ConsentRequest): Promise<ConsentResponse> {
     try {
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🔐 Creating consent request:', request);
+        console.log('🔐 Creating consent request via backend:', request);
       }
-      return await apiClient.post<ConsentResponse>(API_ENDPOINTS.CONSENT.CREATE, request);
+      // Route through backend to avoid CORS issues
+      return await apiClient.post<ConsentResponse>('/setu/consents', request);
     } catch (error) {
       console.error('❌ Failed to create consent request:', error);
       throw error;
@@ -25,63 +27,125 @@ export class SetuApi {
 
   async getConsentRequest(consentId: string): Promise<ConsentResponse> {
     try {
-      const url = buildUrl(API_ENDPOINTS.CONSENT.GET, { consentId });
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🔍 Fetching consent request:', consentId);
+        console.log('🔍 Fetching consent request via backend:', consentId);
       }
-      return await apiClient.get<ConsentResponse>(url);
+      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`);
     } catch (error) {
       console.error('❌ Failed to get consent request:', error);
       throw error;
     }
   }
 
-  async updateConsentRequest(consentId: string, request: Partial<ConsentRequest>): Promise<ConsentResponse> {
+  async revokeConsentRequest(consentId: string): Promise<{ status: string; traceId: string }> {
     try {
-      const url = buildUrl(API_ENDPOINTS.CONSENT.UPDATE, { consentId });
       if (ENV.IS_DEVELOPMENT) {
-        console.log('✏️ Updating consent request:', consentId, request);
+        console.log('🚫 Revoking consent request via backend:', consentId);
       }
-      return await apiClient.put<ConsentResponse>(url, request);
-    } catch (error) {
-      console.error('❌ Failed to update consent request:', error);
-      throw error;
-    }
-  }
-
-  async revokeConsentRequest(consentId: string): Promise<void> {
-    try {
-      const url = buildUrl(API_ENDPOINTS.CONSENT.REVOKE, { consentId });
-      if (ENV.IS_DEVELOPMENT) {
-        console.log('🚫 Revoking consent request:', consentId);
-      }
-      return await apiClient.post<void>(url);
+      return await apiClient.post<{ status: string; traceId: string }>(`/setu/consents/${consentId}/revoke`);
     } catch (error) {
       console.error('❌ Failed to revoke consent request:', error);
       throw error;
     }
   }
 
-  async getConsentStatus(consentId: string): Promise<{ status: string }> {
+  async getConsentStatus(consentId: string): Promise<ConsentResponse> {
     try {
-      const url = buildUrl(API_ENDPOINTS.CONSENT.STATUS, { consentId });
       if (ENV.IS_DEVELOPMENT) {
-        console.log('📊 Getting consent status:', consentId);
+        console.log('📊 Getting consent status via backend:', consentId);
       }
-      return await apiClient.get<{ status: string }>(url);
+      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`);
     } catch (error) {
       console.error('❌ Failed to get consent status:', error);
       throw error;
     }
   }
 
-  // Data Fetching
+  async getConsentFetchStatus(consentId: string): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Getting consent fetch status via backend:', consentId);
+      }
+      return await apiClient.get<any>(`/setu/consents/${consentId}/fetch/status`);
+    } catch (error) {
+      console.error('❌ Failed to get consent fetch status:', error);
+      throw error;
+    }
+  }
+
+  async getConsentDataSessions(consentId: string): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Getting consent data sessions via backend:', consentId);
+      }
+      return await apiClient.get<any>(`/setu/consents/${consentId}/data-sessions`);
+    } catch (error) {
+      console.error('❌ Failed to get consent data sessions:', error);
+      throw error;
+    }
+  }
+
+  // Multi Consent Management
+  async createMultiConsent(optionalConsents: string[], mandatoryConsents: string[]): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('🔐 Creating multi consent via backend:', { optionalConsents, mandatoryConsents });
+      }
+      return await apiClient.post<any>('/setu/consents/collection', {
+        optionalConsents,
+        mandatoryConsents
+      });
+    } catch (error) {
+      console.error('❌ Failed to create multi consent:', error);
+      throw error;
+    }
+  }
+
+  // Data Fetching - Route through backend
+  async fetchData(request: FetchDataRequest): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Fetching data via backend:', request);
+      }
+      return await apiClient.post<any>('/setu/data/fetch', request);
+    } catch (error) {
+      console.error('❌ Failed to fetch data:', error);
+      throw error;
+    }
+  }
+
+  async getDataSessions(): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Getting data sessions via backend');
+      }
+      return await apiClient.get<any>('/setu/data/sessions');
+    } catch (error) {
+      console.error('❌ Failed to get data sessions:', error);
+      throw error;
+    }
+  }
+
+  // FIP Management - Route through backend
+  async getFIPs(): Promise<{ fips: Array<{ id: string; name: string }> }> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('🏛️ Fetching FIPs via backend...');
+      }
+      return await apiClient.get<{ fips: Array<{ id: string; name: string }> }>('/setu/fips');
+    } catch (error) {
+      console.error('❌ Failed to fetch FIPs:', error);
+      throw error;
+    }
+  }
+
+  // Legacy methods for backward compatibility (using your backend)
   async fetchAccounts(request: FetchDataRequest): Promise<AccountResponse> {
     try {
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🏦 Fetching accounts:', request);
+        console.log('🏦 Fetching accounts via backend:', request);
       }
-      return await apiClient.post<AccountResponse>(API_ENDPOINTS.ACCOUNTS.FETCH, request);
+      return await apiClient.post<AccountResponse>('/accounts/fetch', request);
     } catch (error) {
       console.error('❌ Failed to fetch accounts:', error);
       throw error;
@@ -90,11 +154,10 @@ export class SetuApi {
 
   async getAccount(accountId: string): Promise<AccountResponse> {
     try {
-      const url = buildUrl(API_ENDPOINTS.ACCOUNTS.GET, { accountId });
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🏦 Getting account details:', accountId);
+        console.log('🏦 Getting account details via backend:', accountId);
       }
-      return await apiClient.get<AccountResponse>(url);
+      return await apiClient.get<AccountResponse>(`/accounts/${accountId}`);
     } catch (error) {
       console.error('❌ Failed to get account:', error);
       throw error;
@@ -104,9 +167,9 @@ export class SetuApi {
   async fetchTransactions(request: FetchDataRequest): Promise<TransactionResponse> {
     try {
       if (ENV.IS_DEVELOPMENT) {
-        console.log('💳 Fetching transactions:', request);
+        console.log('💳 Fetching transactions via backend:', request);
       }
-      return await apiClient.post<TransactionResponse>(API_ENDPOINTS.TRANSACTIONS.FETCH, request);
+      return await apiClient.post<TransactionResponse>('/transactions/fetch', request);
     } catch (error) {
       console.error('❌ Failed to fetch transactions:', error);
       throw error;
@@ -115,11 +178,10 @@ export class SetuApi {
 
   async getTransaction(transactionId: string): Promise<TransactionResponse> {
     try {
-      const url = buildUrl(API_ENDPOINTS.TRANSACTIONS.GET, { transactionId });
       if (ENV.IS_DEVELOPMENT) {
-        console.log('💳 Getting transaction details:', transactionId);
+        console.log('💳 Getting transaction details via backend:', transactionId);
       }
-      return await apiClient.get<TransactionResponse>(url);
+      return await apiClient.get<TransactionResponse>(`/transactions/${transactionId}`);
     } catch (error) {
       console.error('❌ Failed to get transaction:', error);
       throw error;
@@ -143,25 +205,16 @@ export class SetuApi {
     }
   }
 
-  async getFIPs(): Promise<{ fips: Array<{ id: string; name: string }> }> {
-    try {
-      if (ENV.IS_DEVELOPMENT) {
-        console.log('🏛️ Fetching FIPs...');
-      }
-      return await apiClient.get<{ fips: Array<{ id: string; name: string }> }>('/fips');
-    } catch (error) {
-      console.error('❌ Failed to fetch FIPs:', error);
-      throw error;
-    }
-  }
-
   // Get API configuration info
   getApiInfo() {
     return {
-      baseUrl: apiClient.getBaseUrl(),
+      backendUrl: apiClient.getBaseUrl(),
+      setuUrl: setuDirectApiClient.getBaseUrl(),
       isSecure: apiClient.isSecure(),
       environment: ENV.NODE_ENV,
       timeout: ENV.API_TIMEOUT,
+      clientId: ENV.SETU_CLIENT_ID,
+      productId: ENV.SETU_PRODUCT_ID,
     };
   }
 }

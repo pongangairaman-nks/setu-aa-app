@@ -1,31 +1,39 @@
 export const API_ENDPOINTS = {
-  // Backend API endpoints (proxy to Setu)
+  // Setu API endpoints (direct to Setu)
   CONSENT: {
-    CREATE: '/consents/create',
-    GET: '/consents/{consentId}',
-    UPDATE: '/consents/{consentId}',
-    REVOKE: '/consents/{consentId}',
-    STATUS: '/consents/{consentId}/status',
+    CREATE: '/consents', // POST /consents
+    GET: '/consents/{consentId}', // GET /consents/:id
+    UPDATE: '/consents/{consentId}', // PUT /consents/:id (if supported)
+    REVOKE: '/consents/{consentId}/revoke', // POST /consents/:id/revoke
+    STATUS: '/consents/{consentId}', // GET /consents/:id (same as GET)
+    FETCH_STATUS: '/consents/{consentId}/fetch/status', // GET /consents/:id/fetch/status
+    DATA_SESSIONS: '/consents/{consentId}/data-sessions', // GET /consents/:id/data-sessions
   },
   
-  ACCOUNTS: {
-    FETCH: '/accounts/fetch',
-    GET: '/accounts/{accountId}',
+  // Multi consent endpoints
+  MULTI_CONSENT: {
+    CREATE: '/consents/collection', // POST /consents/collection
   },
   
-  TRANSACTIONS: {
-    FETCH: '/transactions/fetch',
-    GET: '/transactions/{transactionId}',
+  // Data fetching endpoints
+  DATA: {
+    FETCH: '/data/fetch', // POST /data/fetch
+    SESSIONS: '/data/sessions', // GET /data/sessions
   },
   
-  // Authentication endpoints
+  // FIP endpoints
+  FIPS: {
+    LIST: '/fips', // GET /fips
+  },
+  
+  // Authentication endpoints (if needed)
   AUTH: {
     LOGIN: '/auth/login',
     REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
   },
   
-  // Webhook endpoints
+  // Webhook endpoints (your backend)
   WEBHOOK: {
     CONSENT: '/webhooks/consent',
     DATA: '/webhooks/data',

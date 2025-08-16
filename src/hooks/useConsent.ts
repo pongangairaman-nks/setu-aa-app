@@ -4,6 +4,7 @@ import { setuApi } from '../services/api/setuApi';
 import { consentActions } from '../store';
 import { RootState } from '../store';
 import { Consent } from '../types/consent';
+import { ConsentRequest } from '../types/api';
 
 export const useConsent = () => {
   const dispatch = useDispatch();
@@ -25,20 +26,58 @@ export const useConsent = () => {
     }
   }, [dispatch]);
 
-  const createConsent = useCallback(async (consentData: any) => {
+  const createConsent = useCallback(async (consentData: ConsentRequest) => {
     try {
       dispatch(consentActions.clearError());
       dispatch(consentActions.setLoading(true));
-      const response = await setuApi.createConsentRequest(consentData);
+      
+      // Create a proper Setu consent request
+      const setuConsentRequest: ConsentRequest = {
+        consentDuration: {
+          unit: 'MONTH',
+          value: '4'
+        },
+        vua: consentData.vua || '999999999', // Default test mobile number
+        dataRange: {
+          from: '2020-04-01T00:00:00Z',
+          to: '2023-01-01T00:00:00Z'
+        },
+        context: [],
+        additionalParams: {
+          tags: ['Loan_Tracking', 'Partner_X']
+        },
+        // Required fields
+        consentMode: 'STORE',
+        fetchType: 'PERIODIC',
+        consentTypes: ['TRANSACTIONS', 'PROFILE', 'SUMMARY'],
+        fiTypes: ['DEPOSIT'],
+        purpose: {
+          code: '101',
+          refUri: 'https://api.rebit.org.in/aa/purpose/101.xml',
+          text: 'Loan underwriting'
+        },
+        dataLife: {
+          unit: 'MONTH',
+          value: 1
+        },
+        frequency: {
+          unit: 'MONTHLY',
+          value: 1
+        },
+        redirectUrl: 'https://hedgrpay.com/api/consents/callback'
+      };
+
+      const response = await setuApi.createConsentRequest(setuConsentRequest);
       
       const newConsent: Consent = {
-        consentId: response.consentId,
-        status: 'PENDING',
-        fipName: consentData.fipName || 'Unknown FIP',
-        dataLife: consentData.dataLife || 30,
-        permissions: consentData.permissions || [],
+        consentId: response.id, // Setu API returns 'id' not 'consentId'
+        status: response.status,
+        fipName: 'Setu FIP', // Default FIP name
+        dataLife: 30,
+        permissions: ['ACCOUNT', 'TRANSACTIONS'],
         createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + (consentData.dataLife || 30) * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: response.detail?.consentExpiry || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        consentUrl: response.url, // Setu API returns 'url' for consent approval
       };
 
       dispatch(consentActions.addConsent(newConsent));
@@ -57,16 +96,30 @@ export const useConsent = () => {
     try {
       dispatch(consentActions.clearError());
       dispatch(consentActions.setLoading(true));
-      await setuApi.revokeConsentRequest(consentId);
+      const response = await setuApi.revokeConsentRequest(consentId);
       
-      dispatch(consentActions.updateConsent({ consentId, status: 'REVOKED' }));
-      await updateStoredConsent(consentId, { status: 'REVOKED' });
+      dispatch(consentActions.updateConsent({ consentId, status: response.status }));
+      await updateStoredConsent(consentId, { status: response.status });
     } catch (err) {
       dispatch(consentActions.setError('Failed to revoke consent'));
       console.error('Error revoking consent:', err);
       throw err;
     } finally {
       dispatch(consentActions.setLoading(false));
+    }
+  }, [dispatch]);
+
+  const getConsentStatus = useCallback(async (consentId: string) => {
+    try {
+      const response = await setuApi.getConsentStatus(consentId);
+      dispatch(consentActions.updateConsent({ 
+        consentId, 
+        status: response.status 
+      }));
+      return response;
+    } catch (err) {
+      console.error('Error getting consent status:', err);
+      throw err;
     }
   }, [dispatch]);
 
@@ -93,6 +146,7 @@ export const useConsent = () => {
     fetchConsents,
     createConsent,
     revokeConsent,
+    getConsentStatus,
     refreshConsents,
     getConsentById,
     getActiveConsents,

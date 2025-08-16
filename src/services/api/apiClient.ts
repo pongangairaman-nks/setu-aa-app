@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getAuthToken } from '../auth/authService';
+import { tokenService } from '../auth/tokenService';
 import { ENV } from '../../config/environment';
 
 class ApiClient {
@@ -35,7 +35,7 @@ class ApiClient {
 
         // Add auth token if available
         try {
-          const token = await getAuthToken();
+          const token = await tokenService.getAuthToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
           }

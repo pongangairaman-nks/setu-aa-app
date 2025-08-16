@@ -1,9 +1,8 @@
 import { secureStorage } from '../storage/secureStorage';
 import { apiClient } from '../api/apiClient';
 import { API_ENDPOINTS } from '../api/endpoints';
+import { tokenService } from './tokenService';
 
-const AUTH_TOKEN_KEY = 'auth_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
 const USER_DATA_KEY = 'user_data';
 
 export interface LoginCredentials {
@@ -61,7 +60,7 @@ class AuthService {
 
   async refreshToken(): Promise<string | null> {
     try {
-      const refreshToken = await this.getRefreshToken();
+      const refreshToken = await tokenService.getRefreshToken();
       if (!refreshToken) {
         return null;
       }
@@ -71,7 +70,7 @@ class AuthService {
         { refresh_token: refreshToken }
       );
 
-      await this.storeAuthToken(response.access_token);
+      await tokenService.storeAuthToken(response.access_token);
       return response.access_token;
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -81,23 +80,11 @@ class AuthService {
   }
 
   async getAuthToken(): Promise<string | null> {
-    try {
-      const token = await secureStorage.getItemAsync(AUTH_TOKEN_KEY);
-      return token;
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-      return null;
-    }
+    return tokenService.getAuthToken();
   }
 
   async getRefreshToken(): Promise<string | null> {
-    try {
-      const token = await secureStorage.getItemAsync(REFRESH_TOKEN_KEY);
-      return token;
-    } catch (error) {
-      console.error('Error getting refresh token:', error);
-      return null;
-    }
+    return tokenService.getRefreshToken();
   }
 
   async getUser(): Promise<User | null> {
@@ -125,19 +112,10 @@ class AuthService {
 
   private async storeTokens(accessToken: string, refreshToken: string): Promise<void> {
     try {
-      await secureStorage.setItemAsync(AUTH_TOKEN_KEY, accessToken);
-      await secureStorage.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+      await tokenService.storeAuthToken(accessToken);
+      await tokenService.storeRefreshToken(refreshToken);
     } catch (error) {
       console.error('Error storing tokens:', error);
-      throw error;
-    }
-  }
-
-  private async storeAuthToken(token: string): Promise<void> {
-    try {
-      await secureStorage.setItemAsync(AUTH_TOKEN_KEY, token);
-    } catch (error) {
-      console.error('Error storing auth token:', error);
       throw error;
     }
   }
@@ -152,12 +130,7 @@ class AuthService {
   }
 
   private async clearTokens(): Promise<void> {
-    try {
-      await secureStorage.deleteItemAsync(AUTH_TOKEN_KEY);
-      await secureStorage.deleteItemAsync(REFRESH_TOKEN_KEY);
-    } catch (error) {
-      console.error('Error clearing tokens:', error);
-    }
+    await tokenService.clearTokens();
   }
 
   private async clearUserData(): Promise<void> {

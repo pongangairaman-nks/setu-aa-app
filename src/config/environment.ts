@@ -2,13 +2,15 @@
 
 // Environment-specific configurations
 const DEV_CONFIG = {
-  API_BASE_URL: 'http://localhost:5000/api',
+  API_BASE_URL: 'https://hedgrpay.com/api',
+  SETU_API_BASE_URL: 'https://fiu.setu.co', // Production environment
   ENABLE_LOGGING: true,
   API_TIMEOUT: 30000,
 };
 
 const PROD_CONFIG = {
   API_BASE_URL: 'https://hedgrpay.com/api',
+  SETU_API_BASE_URL: 'https://fiu.setu.co', // Production environment
   ENABLE_LOGGING: false,
   API_TIMEOUT: 15000,
 };
@@ -21,12 +23,14 @@ const isProduction = process.env.NODE_ENV === 'production';
 const config = isProduction ? PROD_CONFIG : DEV_CONFIG;
 
 export const ENV = {
-  // Backend API Configuration
+  // Backend API Configuration (for webhooks and other operations)
   API_BASE_URL: process.env.REACT_APP_API_BASE_URL || config.API_BASE_URL,
   
-  // Setu Configuration
-  SETU_BASE_URL: process.env.REACT_APP_SETU_BASE_URL || 'https://fiu-uat.setu.co',
+  // Setu API Configuration (direct to Setu)
+  SETU_API_BASE_URL: process.env.REACT_APP_SETU_API_BASE_URL || config.SETU_API_BASE_URL,
+  SETU_BASE_URL: process.env.REACT_APP_SETU_BASE_URL || 'https://fiu.setu.co', // Production
   SETU_CLIENT_ID: process.env.REACT_APP_SETU_CLIENT_ID || 'b615a43a-e779-4d95-9ddb-768c7666d96b',
+  SETU_CLIENT_SECRET: process.env.REACT_APP_SETU_CLIENT_SECRET || 'eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM',
   SETU_PRODUCT_ID: process.env.REACT_APP_SETU_PRODUCT_ID || 'e02807a8-2588-4306-83d2-5eb1e615abda',
   
   // App Configuration
