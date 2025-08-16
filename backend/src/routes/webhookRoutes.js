@@ -2,16 +2,13 @@ const express = require('express');
 const router = express.Router();
 const webhookController = require('../controllers/webhookController');
 
-// Handle consent webhook
+// Single webhook endpoint that handles both consent and data notifications from Setu
+router.post('/setu', webhookController.handleSetuWebhook);
+
+// Legacy endpoints for backward compatibility
 router.post('/consent', webhookController.handleConsentWebhook);
-
-// Handle data webhook
 router.post('/data', webhookController.handleDataWebhook);
-
-// Handle periodic refresh webhook
 router.post('/periodic-refresh', webhookController.handlePeriodicRefresh);
-
-// Handle consent expiry webhook
 router.post('/consent-expiry', webhookController.handleConsentExpiry);
 
 module.exports = router; 

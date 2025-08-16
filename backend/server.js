@@ -19,7 +19,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
-// connectDB(); // Temporarily disabled for testing Setu integration
+connectDB(); // Enable database connection
 
 // Security middleware
 app.use(helmet());

@@ -18,25 +18,65 @@ const verifyWebhookSignature = (payload, signature, secret) => {
   );
 };
 
-// Handle consent webhook
+// Unified webhook handler for Setu notifications
+exports.handleSetuWebhook = async (req, res) => {
+  try {
+    const { type } = req.body;
+    
+    logger.info(`Received Setu webhook: ${type}`);
+
+    // Route to appropriate handler based on webhook type
+    switch (type) {
+      case 'CONSENT_STATUS_UPDATE':
+        return await exports.handleConsentWebhook(req, res);
+      case 'SESSION_STATUS_UPDATE':
+        return await exports.handleDataWebhook(req, res);
+      default:
+        logger.error(`Unknown webhook type: ${type}`);
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'UNKNOWN_WEBHOOK_TYPE',
+            message: `Unknown webhook type: ${type}`
+          }
+        });
+    }
+  } catch (error) {
+    logger.error('Error in unified webhook handler:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 'WEBHOOK_PROCESSING_FAILED',
+        message: 'Failed to process webhook'
+      }
+    });
+  }
+};
+
+// Handle consent status update webhook (CONSENT_STATUS_UPDATE)
 exports.handleConsentWebhook = async (req, res) => {
   try {
-    const { type, data, signature } = req.body;
+    const { type, data, signature, consentId, timestamp, success, error } = req.body;
     
-    // Verify webhook signature
-    const webhookSecret = process.env.SETU_WEBHOOK_SECRET;
-    if (!verifyWebhookSignature(req.body, signature, webhookSecret)) {
-      logger.error('Invalid webhook signature');
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'INVALID_SIGNATURE',
-          message: 'Invalid webhook signature'
-        }
-      });
+    logger.info(`Received webhook: ${type} for consent: ${consentId}`);
+
+    // Verify webhook signature if provided
+    if (signature) {
+      const webhookSecret = process.env.SETU_WEBHOOK_SECRET;
+      if (!verifyWebhookSignature(req.body, signature, webhookSecret)) {
+        logger.error('Invalid webhook signature');
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'INVALID_SIGNATURE',
+            message: 'Invalid webhook signature'
+          }
+        });
+      }
     }
 
-    if (type !== 'CONSENT') {
+    if (type !== 'CONSENT_STATUS_UPDATE') {
+      logger.error(`Invalid webhook type: ${type}`);
       return res.status(400).json({
         success: false,
         error: {
@@ -46,46 +86,121 @@ exports.handleConsentWebhook = async (req, res) => {
       });
     }
 
-    const { consentId, status, timestamp } = data;
+    // Handle error cases (UserCancelled, UserRejected, etc.)
+    if (!success && error) {
+      logger.info(`Consent error: ${error.code} - ${error.message} for consent: ${consentId}`);
+      
+      // Update consent status based on error
+      let status = 'REJECTED';
+      if (error.code === 'UserCancelled') {
+        status = 'PENDING'; // User cancelled before login, consent can be reused
+      } else if (error.code === 'UserRejected') {
+        status = 'REJECTED';
+      } else if (error.code === 'NoFIPAccountsDiscovered') {
+        status = 'REJECTED';
+      } else if (error.code === 'FIPDenied') {
+        status = 'REJECTED';
+      }
 
-    // Update consent status in database
-    const consent = await Consent.findOneAndUpdate(
-      { consentId },
-      { 
+      const updateData = {
         status, 
-        lastUpdated: new Date(timestamp),
-        webhookReceivedAt: new Date()
-      },
-      { new: true }
-    );
+        lastUpdated: timestamp ? new Date(timestamp) : new Date(),
+        webhookReceivedAt: new Date(),
+        errorCode: error.code,
+        errorMessage: error.message
+      };
 
-    if (!consent) {
-      logger.error(`Consent not found for webhook: ${consentId}`);
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'CONSENT_NOT_FOUND',
-          message: 'Consent not found'
-        }
+      // If this is a new consent (upsert), set required fields
+      const existingConsent = await Consent.findOne({ consentId });
+      if (!existingConsent) {
+        updateData.createdAt = new Date();
+        updateData.expiresAt = new Date(Date.now() + (180 * 24 * 60 * 60 * 1000)); // 180 days from now
+        updateData.deleteAt = new Date(Date.now() + (180 * 24 * 60 * 60 * 1000)); // 180 days from now
+        updateData.userId = '000000000000000000000000'; // Default ObjectId for system
+        updateData.fipId = 'setu-fip';
+        updateData.fipName = 'Setu FIP';
+        updateData.dataLife = 180;
+        updateData.permissions = ['ACCOUNT', 'TRANSACTIONS'];
+        updateData.fetchType = 'PERIODIC';
+      }
+
+      await Consent.findOneAndUpdate(
+        { consentId },
+        updateData,
+        { new: true, upsert: true }
+      );
+
+      return res.json({
+        success: true,
+        message: 'Error webhook processed successfully'
       });
     }
 
-    logger.info(`Consent webhook processed: ${consentId} -> ${status}`);
+    // Handle successful consent status updates
+    if (success && data) {
+      const { status, detail } = data;
+      
+      logger.info(`Consent status update: ${consentId} -> ${status}`);
 
-    // If consent is active, trigger data fetch
-    if (status === 'ACTIVE') {
-      // Fetch accounts and transactions for this consent
-      try {
-        await setuService.fetchAndStoreData(consentId, consent.userId);
-        logger.info(`Data fetched for active consent: ${consentId}`);
-      } catch (error) {
-        logger.error(`Error fetching data for consent ${consentId}:`, error);
+      // Update consent status in database
+      const updateData = {
+        status, 
+        lastUpdated: timestamp ? new Date(timestamp) : new Date(),
+        webhookReceivedAt: new Date(),
+        accounts: detail?.accounts || []
+      };
+
+      // If this is a new consent (upsert), set required fields
+      const existingConsent = await Consent.findOne({ consentId });
+      if (!existingConsent) {
+        updateData.createdAt = new Date();
+        updateData.expiresAt = new Date(Date.now() + (180 * 24 * 60 * 60 * 1000)); // 180 days from now
+        updateData.deleteAt = new Date(Date.now() + (180 * 24 * 60 * 60 * 1000)); // 180 days from now
+        updateData.userId = '000000000000000000000000'; // Default ObjectId for system
+        updateData.fipId = 'setu-fip';
+        updateData.fipName = 'Setu FIP';
+        updateData.dataLife = 180;
+        updateData.permissions = ['ACCOUNT', 'TRANSACTIONS'];
+        updateData.fetchType = 'PERIODIC';
+      }
+
+      const consent = await Consent.findOneAndUpdate(
+        { consentId },
+        updateData,
+        { new: true, upsert: true }
+      );
+
+      // If consent is active, trigger data fetch
+      if (status === 'ACTIVE' && detail?.accounts) {
+        try {
+          // Store account information
+          for (const account of detail.accounts) {
+            await Account.findOneAndUpdate(
+              { linkRefNumber: account.linkRefNumber },
+              {
+                consentId,
+                maskedAccNumber: account.maskedAccNumber,
+                accType: account.accType,
+                fipId: account.fipId,
+                fiType: account.fiType,
+                linkRefNumber: account.linkRefNumber,
+                status: 'ACTIVE',
+                lastUpdated: new Date()
+              },
+              { new: true, upsert: true }
+            );
+          }
+          
+          logger.info(`Accounts stored for active consent: ${consentId}`);
+        } catch (error) {
+          logger.error(`Error storing accounts for consent ${consentId}:`, error);
+        }
       }
     }
 
     res.json({
       success: true,
-      message: 'Webhook processed successfully'
+      message: 'Consent webhook processed successfully'
     });
   } catch (error) {
     logger.error('Error processing consent webhook:', error);
@@ -99,25 +214,30 @@ exports.handleConsentWebhook = async (req, res) => {
   }
 };
 
-// Handle data webhook
+// Handle data session status update webhook (SESSION_STATUS_UPDATE)
 exports.handleDataWebhook = async (req, res) => {
   try {
-    const { type, data, signature } = req.body;
+    const { type, data, signature, consentId, dataSessionId, timestamp, success, error } = req.body;
     
-    // Verify webhook signature
-    const webhookSecret = process.env.SETU_WEBHOOK_SECRET;
-    if (!verifyWebhookSignature(req.body, signature, webhookSecret)) {
-      logger.error('Invalid webhook signature');
-      return res.status(401).json({
-        success: false,
-        error: {
-          code: 'INVALID_SIGNATURE',
-          message: 'Invalid webhook signature'
-        }
-      });
+    logger.info(`Received data webhook: ${type} for session: ${dataSessionId}, consent: ${consentId}`);
+
+    // Verify webhook signature if provided
+    if (signature) {
+      const webhookSecret = process.env.SETU_WEBHOOK_SECRET;
+      if (!verifyWebhookSignature(req.body, signature, webhookSecret)) {
+        logger.error('Invalid webhook signature');
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'INVALID_SIGNATURE',
+            message: 'Invalid webhook signature'
+          }
+        });
+      }
     }
 
-    if (type !== 'DATA') {
+    if (type !== 'SESSION_STATUS_UPDATE') {
+      logger.error(`Invalid webhook type: ${type}`);
       return res.status(400).json({
         success: false,
         error: {
@@ -127,35 +247,48 @@ exports.handleDataWebhook = async (req, res) => {
       });
     }
 
-    const { consentId, accountId, dataType, timestamp } = data;
-
-    // Verify consent exists and is active
-    const consent = await Consent.findOne({ consentId, status: 'ACTIVE' });
-    if (!consent) {
-      logger.error(`Active consent not found for data webhook: ${consentId}`);
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'CONSENT_NOT_FOUND',
-          message: 'Active consent not found'
-        }
+    // Handle error cases
+    if (!success && error) {
+      logger.error(`Data session error: ${error.code} - ${error.message} for session: ${dataSessionId}`);
+      return res.json({
+        success: true,
+        message: 'Error webhook processed successfully'
       });
     }
 
-    // Fetch and store the new data
-    try {
-      if (dataType === 'ACCOUNT') {
-        await setuService.fetchAndStoreAccounts(consentId, consent.userId);
-        logger.info(`Account data fetched for consent: ${consentId}`);
-      } else if (dataType === 'TRANSACTION') {
-        await setuService.fetchAndStoreTransactions(consentId, accountId, consent.userId);
-        logger.info(`Transaction data fetched for consent: ${consentId}, account: ${accountId}`);
-      }
-    } catch (error) {
-      logger.error(`Error fetching data for webhook: ${consentId}`, error);
-    }
+    // Handle successful data session updates
+    if (success && data) {
+      const { status, fips } = data;
+      
+      logger.info(`Data session status update: ${dataSessionId} -> ${status}`);
 
-    logger.info(`Data webhook processed: ${consentId} -> ${dataType}`);
+      // Update account statuses based on FI status
+      if (fips && Array.isArray(fips)) {
+        for (const fip of fips) {
+          for (const account of fip.accounts) {
+            await Account.findOneAndUpdate(
+              { linkRefNumber: account.linkRefNumber },
+              {
+                fiStatus: account.FIStatus,
+                fiStatusDescription: account.description,
+                lastUpdated: new Date()
+              },
+              { new: true }
+            );
+          }
+        }
+      }
+
+      // If session is completed, trigger data fetch
+      if (status === 'COMPLETED') {
+        try {
+          await setuService.fetchAndStoreData(consentId, null);
+          logger.info(`Data fetched for completed session: ${dataSessionId}`);
+        } catch (error) {
+          logger.error(`Error fetching data for session ${dataSessionId}:`, error);
+        }
+      }
+    }
 
     res.json({
       success: true,

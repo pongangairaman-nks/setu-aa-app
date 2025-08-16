@@ -79,7 +79,7 @@ const consentSchema = new mongoose.Schema({
     type: Date,
     default: function() {
       // Set deletion date to 6 months from creation
-      const deleteDate = new Date(this.createdAt);
+      const deleteDate = new Date();
       deleteDate.setMonth(deleteDate.getMonth() + 6);
       return deleteDate;
     },
@@ -97,7 +97,8 @@ consentSchema.index({ status: 1, expiresAt: 1 });
 // Pre-save middleware to update deleteAt when createdAt changes
 consentSchema.pre('save', function(next) {
   if (this.isNew) {
-    const deleteDate = new Date(this.createdAt);
+    const baseDate = this.createdAt || new Date();
+    const deleteDate = new Date(baseDate);
     deleteDate.setMonth(deleteDate.getMonth() + 6);
     this.deleteAt = deleteDate;
   }
