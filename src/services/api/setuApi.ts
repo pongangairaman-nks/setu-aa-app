@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { setuDirectApiClient } from './setuDirectApi';
+import { setuTokenService } from '../auth/setuTokenService';
 import { API_ENDPOINTS, buildUrl } from './endpoints';
 import { 
   ConsentRequest, 
@@ -17,8 +18,16 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('🔐 Creating consent request via backend:', request);
       }
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
       // Route through backend to avoid CORS issues
-      return await apiClient.post<ConsentResponse>('/setu/consents', request);
+      return await apiClient.post<ConsentResponse>('/setu/consents', request, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to create consent request:', error);
       throw error;
@@ -30,7 +39,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('🔍 Fetching consent request via backend:', consentId);
       }
-      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to get consent request:', error);
       throw error;
@@ -42,7 +59,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('🚫 Revoking consent request via backend:', consentId);
       }
-      return await apiClient.post<{ status: string; traceId: string }>(`/setu/consents/${consentId}/revoke`);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.post<{ status: string; traceId: string }>(`/setu/consents/${consentId}/revoke`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to revoke consent request:', error);
       throw error;
@@ -54,7 +79,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('📊 Getting consent status via backend:', consentId);
       }
-      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to get consent status:', error);
       throw error;
@@ -66,7 +99,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('📊 Getting consent fetch status via backend:', consentId);
       }
-      return await apiClient.get<any>(`/setu/consents/${consentId}/fetch/status`);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<any>(`/setu/consents/${consentId}/fetch/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to get consent fetch status:', error);
       throw error;
@@ -78,7 +119,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('📊 Getting consent data sessions via backend:', consentId);
       }
-      return await apiClient.get<any>(`/setu/consents/${consentId}/data-sessions`);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<any>(`/setu/consents/${consentId}/data-sessions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to get consent data sessions:', error);
       throw error;
@@ -91,9 +140,17 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('🔐 Creating multi consent via backend:', { optionalConsents, mandatoryConsents });
       }
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
       return await apiClient.post<any>('/setu/consents/collection', {
         optionalConsents,
         mandatoryConsents
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
     } catch (error) {
       console.error('❌ Failed to create multi consent:', error);
@@ -107,7 +164,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('📊 Fetching data via backend:', request);
       }
-      return await apiClient.post<any>('/setu/data/fetch', request);
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.post<any>('/setu/data/fetch', request, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to fetch data:', error);
       throw error;
@@ -119,7 +184,15 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('📊 Getting data sessions via backend');
       }
-      return await apiClient.get<any>('/setu/data/sessions');
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<any>('/setu/data/sessions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to get data sessions:', error);
       throw error;
@@ -132,9 +205,59 @@ export class SetuApi {
       if (ENV.IS_DEVELOPMENT) {
         console.log('🏛️ Fetching FIPs via backend...');
       }
-      return await apiClient.get<{ fips: Array<{ id: string; name: string }> }>('/setu/fips');
+      
+      // Get valid token first
+      const token = await setuTokenService.getValidToken();
+      
+      return await apiClient.get<{ fips: Array<{ id: string; name: string }> }>('/setu/fips', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
     } catch (error) {
       console.error('❌ Failed to fetch FIPs:', error);
+      throw error;
+    }
+  }
+
+  // Token management methods
+  async fetchToken(): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('🔐 Fetching new Setu token...');
+      }
+      
+      const token = await setuTokenService.fetchToken();
+      
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('✅ Token fetched successfully');
+      }
+      
+      return token;
+    } catch (error) {
+      console.error('❌ Failed to fetch token:', error);
+      throw error;
+    }
+  }
+
+  async getTokenInfo(): Promise<any> {
+    try {
+      return await setuTokenService.getTokenInfo();
+    } catch (error) {
+      console.error('❌ Failed to get token info:', error);
+      throw error;
+    }
+  }
+
+  async clearToken(): Promise<void> {
+    try {
+      await setuTokenService.clearToken();
+      
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('🗑️ Token cleared successfully');
+      }
+    } catch (error) {
+      console.error('❌ Failed to clear token:', error);
       throw error;
     }
   }

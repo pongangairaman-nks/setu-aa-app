@@ -15,6 +15,7 @@ const accountRoutes = require('./src/routes/accountRoutes');
 const transactionRoutes = require('./src/routes/transactionRoutes');
 const webhookRoutes = require('./src/routes/webhookRoutes');
 const setuRoutes = require('./src/routes/setuRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -104,6 +105,7 @@ app.use('/api/accounts', accountRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/setu', setuRoutes); // Add Setu API proxy routes
+app.use('/api/auth', authRoutes); // Add auth routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {
