@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { HomeScreen } from '../screens/HomeScreen/HomeScreen';
 import { ConsentScreen } from '../screens/ConsentScreen/ConsentScreen';
+import { ConsentCallbackScreen } from '../screens/ConsentCallbackScreen/ConsentCallbackScreen';
 import { AccountsScreen } from '../screens/AccountsScreen/AccountsScreen';
 import { TransactionsScreen } from '../screens/TransactionsScreen/TransactionsScreen';
 import { WebViewScreen } from '../screens/WebViewScreen/WebViewScreen';
@@ -47,9 +48,11 @@ const TabNavigator: React.FC = () => {
   );
 };
 
+import { navigationRef } from './navigationRef';
+
 export const AppNavigator: React.FC = () => {
   return (
-    <NavigationContainer>
+    <NavigationContainer ref={navigationRef}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
@@ -57,6 +60,7 @@ export const AppNavigator: React.FC = () => {
       >
         <Stack.Screen name="Main" component={TabNavigator} />
         <Stack.Screen name="WebView" component={WebViewScreen} />
+        <Stack.Screen name="ConsentCallback" component={ConsentCallbackScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

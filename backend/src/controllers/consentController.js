@@ -235,3 +235,42 @@ exports.getConsentStatus = async (req, res) => {
     });
   }
 }; 
+
+// Consent callback endpoint - handles redirect from Setu
+exports.consentCallback = async (req, res) => {
+  try {
+    const { consentId, status, error } = req.query;
+    
+    logger.info(`Consent callback received - ConsentId: ${consentId}, Status: ${status}, Error: ${error}`);
+
+    // Update consent status in database if consentId is provided
+    if (consentId) {
+      const consent = await Consent.findOneAndUpdate(
+        { consentId },
+        { 
+          status: status || 'COMPLETED',
+          lastUpdated: new Date(),
+          callbackReceived: true
+        },
+        { new: true }
+      );
+
+      if (consent) {
+        logger.info(`Consent status updated in database: ${consentId} -> ${status}`);
+      }
+    }
+
+    // Create the mobile app deep link with parameters
+    const mobileAppUrl = `setu-aa-app://consent-callback?consentId=${consentId || ''}&status=${status || 'unknown'}&error=${error || ''}`;
+    
+    // Redirect to mobile app
+    res.redirect(mobileAppUrl);
+    
+  } catch (error) {
+    logger.error('Error in consent callback:', error);
+    
+    // Even if there's an error, try to redirect to mobile app with error status
+    const mobileAppUrl = `setu-aa-app://consent-callback?error=callback_error&message=${encodeURIComponent(error.message)}`;
+    res.redirect(mobileAppUrl);
+  }
+}; 

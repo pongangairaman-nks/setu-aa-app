@@ -7,20 +7,23 @@ const validationMiddleware = require('../middleware/validationMiddleware');
 // Apply authentication middleware to all routes
 // router.use(authMiddleware); // Temporarily disabled for development
 
+// Consent callback endpoint - handles redirect from Setu (must be before parameterized routes)
+router.get('/callback', consentController.consentCallback);
+
 // Create consent request
 router.post('/create', 
   validationMiddleware.validateConsentCreation,
   consentController.createConsent
 );
 
+// Get all consents for user
+router.get('/', consentController.getUserConsents);
+
 // Get consent by ID
 router.get('/:consentId', 
   validationMiddleware.validateConsentId,
   consentController.getConsent
 );
-
-// Get all consents for user
-router.get('/', consentController.getUserConsents);
 
 // Update consent status
 router.patch('/:consentId/status',

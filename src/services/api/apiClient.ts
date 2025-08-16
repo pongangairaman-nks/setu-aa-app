@@ -8,9 +8,10 @@ class ApiClient {
   constructor() {
     this.client = axios.create({
       baseURL: ENV.API_BASE_URL,
-      timeout: 30000,
+      timeout: ENV.API_TIMEOUT,
       headers: {
         'Content-Type': 'application/json',
+        'User-Agent': `${ENV.APP_NAME}/${ENV.VERSION}`,
       },
     });
 
@@ -21,14 +22,30 @@ class ApiClient {
     // Request interceptor to add auth token
     this.client.interceptors.request.use(
       async (config) => {
-        // Temporarily disabled for development
-        // const token = await getAuthToken();
-        // if (token) {
-        //   config.headers.Authorization = `Bearer ${token}`;
-        // }
+        // Log requests in development
+        if (ENV.IS_DEVELOPMENT && ENV.ENABLE_LOGGING) {
+          console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        }
+
+        // Add auth token if available
+        try {
+          const token = await getAuthToken();
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
+        } catch (error) {
+          // Token not available, continue without auth
+          if (ENV.IS_DEVELOPMENT) {
+            console.warn('No auth token available');
+          }
+        }
+
         return config;
       },
       (error) => {
+        if (ENV.IS_DEVELOPMENT) {
+          console.error('❌ Request Error:', error);
+        }
         return Promise.reject(error);
       }
     );
@@ -36,13 +53,35 @@ class ApiClient {
     // Response interceptor to handle errors
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
+        // Log successful responses in development
+        if (ENV.IS_DEVELOPMENT && ENV.ENABLE_LOGGING) {
+          console.log(`✅ API Response: ${response.status} ${response.config.url}`);
+        }
         return response;
       },
       (error) => {
+        // Log errors
+        if (ENV.IS_DEVELOPMENT) {
+          console.error('❌ API Error:', {
+            status: error.response?.status,
+            url: error.config?.url,
+            message: error.response?.data?.error?.message || error.message,
+          });
+        }
+
+        // Handle specific error cases
         if (error.response?.status === 401) {
           // Handle unauthorized access
-          console.error('Unauthorized access');
+          console.error('🔒 Unauthorized access - token may be expired');
+          // You can trigger re-authentication here
+        } else if (error.response?.status === 500) {
+          console.error('🔧 Server error - please try again later');
+        } else if (error.code === 'ECONNABORTED') {
+          console.error('⏰ Request timeout - please check your connection');
+        } else if (error.code === 'NETWORK_ERROR') {
+          console.error('🌐 Network error - please check your internet connection');
         }
+
         return Promise.reject(error);
       }
     );
@@ -71,6 +110,16 @@ class ApiClient {
   public async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.client.patch<T>(url, data, config);
     return response.data;
+  }
+
+  // Health check method
+  public async healthCheck(): Promise<boolean> {
+    try {
+      const response = await this.client.get('/health');
+      return response.status === 200;
+    } catch (error) {
+      return false;
+    }
   }
 }
 

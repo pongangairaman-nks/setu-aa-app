@@ -12,6 +12,10 @@ export const ConsentCallbackScreenStyles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 300,
   },
+  icon: {
+    fontSize: 48,
+    marginBottom: 20,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -24,5 +28,16 @@ export const ConsentCallbackScreenStyles = StyleSheet.create({
     textAlign: 'center',
     color: '#666666',
     lineHeight: 24,
+    marginBottom: 30,
+  },
+  actions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 20,
+  },
+  button: {
+    minWidth: 120,
   },
 }); 

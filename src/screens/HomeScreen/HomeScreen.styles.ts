@@ -45,4 +45,12 @@ export const styles = StyleSheet.create({
     padding: 20,
     fontStyle: 'italic',
   },
+  configText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
 }); 
