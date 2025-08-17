@@ -34,7 +34,7 @@ export const LoginScreen: React.FC = () => {
       const response = await userAuthService.login({ email, password });
       
       console.log('✅ Login successful');
-      
+      navigation.navigate('Main' as never);
       Alert.alert(
         'Success', 
         `Welcome back, ${response.user.name}!`,

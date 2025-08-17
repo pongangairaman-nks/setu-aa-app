@@ -11,7 +11,7 @@ import { ConsentStatus } from '../../components/financial/ConsentStatus/ConsentS
 import { useConsent } from '../../hooks/useConsent';
 import { useWebView } from '../../hooks/useWebView';
 import { setuApi } from '../../services/api/setuApi';
-import { simpleTokenService } from '../../services/auth/simpleTokenService';
+
 import { SandboxConsentRequest } from '../../types/api';
 import { ENV } from '../../config/environment';
 
@@ -28,35 +28,6 @@ export const ConsentScreen: React.FC = () => {
     try {
       console.log('🚀 Starting consent creation process...');
       setCreatingConsent(true);
-      
-      // Check if we have a valid token
-      console.log('🔍 Checking token validity...');
-      const isTokenValid = await simpleTokenService.isTokenValid();
-      console.log('Token valid:', isTokenValid);
-      
-      if (!isTokenValid) {
-        Alert.alert(
-          'Token Required',
-          'Please fetch a token first using the "Fetch Token" button on the home screen.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-      
-      console.log('✅ Token is valid, creating consent...');
-      
-      // Get token info for debugging
-      const tokenInfo = await simpleTokenService.getTokenInfo();
-      console.log('Token info:', tokenInfo);
-      
-      // Show token info for debugging (optional - can be removed)
-      if (ENV.IS_DEVELOPMENT) {
-        Alert.alert(
-          'Token Info',
-          `Token Valid: ${isTokenValid}\nExpires: ${tokenInfo?.expiresAt || 'Unknown'}\nTime Left: ${tokenInfo?.timeUntilExpiry ? Math.floor(tokenInfo.timeUntilExpiry / 60) : 'Unknown'} minutes`,
-          [{ text: 'Continue', onPress: () => {} }]
-        );
-      }
       
       // Create consent request with redirect URL - Updated to match working curl format
       const consentData: SandboxConsentRequest = {
