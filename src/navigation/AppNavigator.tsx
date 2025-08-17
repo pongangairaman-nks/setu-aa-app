@@ -10,6 +10,8 @@ import { ConsentCallbackScreen } from '../screens/ConsentCallbackScreen/ConsentC
 import { AccountsScreen } from '../screens/AccountsScreen/AccountsScreen';
 import { TransactionsScreen } from '../screens/TransactionsScreen/TransactionsScreen';
 import { WebViewScreen } from '../screens/WebViewScreen/WebViewScreen';
+import { LoginScreen } from '../screens/LoginScreen/LoginScreen';
+import { RegisterScreen } from '../screens/RegisterScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -57,10 +59,13 @@ export const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
         }}
+        initialRouteName="Login"
       >
-        <Stack.Screen name="Main" component={TabNavigator} />
-        <Stack.Screen name="WebView" component={WebViewScreen} />
-        <Stack.Screen name="ConsentCallback" component={ConsentCallbackScreen} />
+                            <Stack.Screen name="Login" component={LoginScreen} />
+                    <Stack.Screen name="Register" component={RegisterScreen} />
+                    <Stack.Screen name="Main" component={TabNavigator} />
+                    <Stack.Screen name="WebView" component={WebViewScreen} />
+                    <Stack.Screen name="ConsentCallback" component={ConsentCallbackScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

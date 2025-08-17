@@ -13,60 +13,23 @@ import {
 import { ENV } from '../../config/environment';
 
 export class SetuApi {
-  // Consent Management - Direct to Setu API with proper CORS handling
+  // Consent Management - Route through backend (backend handles Setu token automatically)
   async createConsentRequest(request: ConsentRequest | SandboxConsentRequest): Promise<ConsentResponse> {
     try {
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🔐 Creating consent request directly with Setu API:', request);
+        console.log('🔐 Creating consent request via backend:', request);
       }
       
-      // Get valid token first
-      const token = await simpleTokenService.getValidToken();
-      console.log('🔑 Using token:', token.substring(0, 50) + '...');
+      // Route through backend - backend will automatically handle Setu token
+      const response = await apiClient.post<ConsentResponse>('/setu/consents', request);
       
-      // Make request through local proxy to avoid CORS
-      const response = await fetch(`http://localhost:3001/api/setu-proxy/v2/consents`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-          'x-product-instance-id': ENV.SETU_PRODUCT_ID,
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        mode: 'cors', // Explicitly set CORS mode
-        credentials: 'omit', // Don't send credentials
-        body: JSON.stringify(request)
-      });
-      
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ API Error:', errorData);
-        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('✅ Backend consent creation response:', response);
       }
       
-      const result = await response.json();
-      console.log('✅ API Response:', result);
-      return result;
+      return response;
     } catch (error) {
       console.error('❌ Failed to create consent request:', error);
-      
-      // If CORS error, try alternative approach
-      if (error instanceof Error && (error.message.includes('CORS') || error.message.includes('NetworkError'))) {
-        console.log('🔄 CORS error detected, trying backend proxy...');
-        try {
-          const backendResponse = await apiClient.post<ConsentResponse>('/setu/consents', request);
-          console.log('✅ Backend proxy successful:', backendResponse);
-          return backendResponse;
-        } catch (backendError) {
-          console.error('❌ Backend proxy also failed:', backendError);
-          throw new Error('Both direct API and backend proxy failed. Please check your configuration.');
-        }
-      }
-      
       throw error;
     }
   }

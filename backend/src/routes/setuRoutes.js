@@ -2,67 +2,31 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const logger = require('../utils/logger');
+const setuTokenManager = require('../services/setuTokenManager');
 
-// Setu API configuration - Updated to use sandbox environment
+// Setu API configuration
 const SETU_CONFIG = {
-  AUTH_URL: 'https://orgservice-sandbox.setu.co',
   API_URL: 'https://fiu-sandbox.setu.co',
-  CLIENT_ID: 'b615a43a-e779-4d95-9ddb-768c7666d96b',
-  CLIENT_SECRET: 'eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM',
-  PRODUCT_ID: 'e02807a8-2588-4306-83d2-5eb1e615abda'
+  PRODUCT_ID: process.env.SETU_PRODUCT_ID || 'e02807a8-2588-4306-83d2-5eb1e615abda'
 };
 
-let accessToken = null;
-let tokenExpiry = 0;
 
-// Get Setu access token
-async function getSetuAccessToken() {
-  try {
-    const now = Date.now();
-    
-    // Check if token is expired or will expire soon (within 5 minutes)
-    if (!accessToken || now >= (tokenExpiry - 5 * 60 * 1000)) {
-      logger.info('Getting new Setu access token...');
-      
-      const authPayload = {
-        clientID: SETU_CONFIG.CLIENT_ID,
-        grant_type: 'client_credentials',
-        secret: SETU_CONFIG.CLIENT_SECRET
-      };
 
-      const response = await axios.post(`${SETU_CONFIG.AUTH_URL}/v1/users/login`, authPayload, {
-        headers: {
-          'Content-Type': 'application/json',
-          'client': 'bridge'
-        },
-        timeout: 30000
-      });
 
-      accessToken = response.data.access_token;
-      // Set expiry to 1 hour from now
-      tokenExpiry = now + (60 * 60 * 1000);
-      
-      logger.info('Setu access token obtained successfully');
-    }
-    
-    return accessToken;
-  } catch (error) {
-    logger.error('Failed to get Setu access token:', error.message);
-    throw new Error('Authentication failed with Setu API');
-  }
-}
 
 // Make authenticated request to Setu API
 async function makeSetuRequest(method, endpoint, data = null) {
   try {
-    const token = await getSetuAccessToken();
-    
+    // Get valid Setu token (automatically fetches new one if needed)
+    const accessToken = await setuTokenManager.getValidToken();
+    logger.info('Using valid Setu token for API request');
+
     const config = {
       method,
       url: `${SETU_CONFIG.API_URL}${endpoint}`,
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'x-product-instance-id': SETU_CONFIG.PRODUCT_ID
       },
       timeout: 30000
@@ -76,6 +40,38 @@ async function makeSetuRequest(method, endpoint, data = null) {
     return response.data;
   } catch (error) {
     logger.error(`Setu API request failed (${method} ${endpoint}):`, error.response?.data || error.message);
+    
+    // If token error, clear token and retry once
+    if (error.response?.status === 401) {
+      logger.info('Token may be invalid, clearing and retrying...');
+      setuTokenManager.clearToken();
+      
+      try {
+        const newToken = await setuTokenManager.getValidToken();
+        const retryConfig = {
+          method,
+          url: `${SETU_CONFIG.API_URL}${endpoint}`,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${newToken}`,
+            'x-product-instance-id': SETU_CONFIG.PRODUCT_ID
+          },
+          timeout: 30000
+        };
+
+        if (data) {
+          retryConfig.data = data;
+        }
+
+        const retryResponse = await axios(retryConfig);
+        logger.info('Retry successful with new token');
+        return retryResponse.data;
+      } catch (retryError) {
+        logger.error('Retry failed:', retryError.message);
+        throw retryError;
+      }
+    }
+    
     throw error;
   }
 }

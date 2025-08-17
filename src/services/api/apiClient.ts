@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { tokenService } from '../auth/tokenService';
+import { userAuthService } from '../auth/userAuthService';
 import { ENV } from '../../config/environment';
 
 class ApiClient {
@@ -33,16 +33,16 @@ class ApiClient {
           console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
         }
 
-        // Add auth token if available
+        // Add user auth token if available
         try {
-          const token = await tokenService.getAuthToken();
+          const token = await userAuthService.getAuthToken();
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
           }
         } catch (error) {
           // Token not available, continue without auth
           if (ENV.IS_DEVELOPMENT) {
-            console.warn('No auth token available');
+            console.warn('No user auth token available');
           }
         }
 

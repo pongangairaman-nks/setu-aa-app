@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const accountsController = require('../controllers/accountsController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { authenticateToken } = require('../middleware/authMiddleware');
 const validationMiddleware = require('../middleware/validationMiddleware');
 
 // Apply authentication middleware to all routes
-router.use(authMiddleware);
+router.use(authenticateToken);
 
 // Fetch accounts from Setu
 router.post('/fetch',

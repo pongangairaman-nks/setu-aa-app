@@ -38,7 +38,7 @@ class SimpleTokenService {
         console.log('🔐 Fetching Setu token from backend...');
       }
 
-      const response = await apiClient.post<SetuTokenResponse>('/auth/setu-token');
+      const response = await apiClient.post<SetuTokenResponse>('/setu-auth/setu-token');
       
       if (!response.success || !response.data) {
         throw new Error(response.error?.message || 'Failed to fetch token');
