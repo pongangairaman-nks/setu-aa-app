@@ -3,10 +3,10 @@ const router = express.Router();
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-// Setu API configuration
+// Setu API configuration - Updated to use sandbox environment
 const SETU_CONFIG = {
-  AUTH_URL: 'https://orgservice-prod.setu.co',
-  API_URL: 'https://fiu.setu.co',
+  AUTH_URL: 'https://orgservice-sandbox.setu.co',
+  API_URL: 'https://fiu-sandbox.setu.co',
   CLIENT_ID: 'b615a43a-e779-4d95-9ddb-768c7666d96b',
   CLIENT_SECRET: 'eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM',
   PRODUCT_ID: 'e02807a8-2588-4306-83d2-5eb1e615abda'

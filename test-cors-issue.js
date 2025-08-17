@@ -1,11 +1,11 @@
 const https = require('https');
 
-// Test complete consent creation flow
-async function testCompleteFlow() {
-  console.log('🧪 Testing Complete Consent Creation Flow\n');
+// Test CORS issue with direct Setu API call
+async function testCorsIssue() {
+  console.log('🧪 Testing CORS Issue with Direct Setu API\n');
 
-  // Step 1: Get token (simulating "Fetch Token" button)
-  console.log('🔐 Step 1: Getting token (Fetch Token button)...');
+  // Step 1: Get token
+  console.log('🔐 Step 1: Getting token...');
   
   const tokenOptions = {
     hostname: 'hedgrpay.com',
@@ -28,22 +28,18 @@ async function testCompleteFlow() {
         try {
           const response = JSON.parse(data);
           if (res.statusCode === 200 && response.success) {
-            console.log('✅ Token obtained successfully (Fetch Token button)');
-            console.log(`Token: ${response.data.access_token.substring(0, 50)}...`);
+            console.log('✅ Token obtained successfully');
             resolve(response.data.access_token);
           } else {
-            console.log('❌ Failed to get token:', response);
             reject(new Error('Failed to get token'));
           }
         } catch (error) {
-          console.log('Raw token response:', data);
           reject(error);
         }
       });
     });
 
     req.on('error', (error) => {
-      console.error('❌ Token request failed:', error);
       reject(error);
     });
 
@@ -53,8 +49,8 @@ async function testCompleteFlow() {
   try {
     const token = await tokenPromise;
     
-    // Step 2: Create consent (simulating "Create Consent" button)
-    console.log('\n📋 Step 2: Creating consent (Create Consent button)...');
+    // Step 2: Test direct Setu API call (simulating frontend)
+    console.log('\n📋 Step 2: Testing direct Setu API call (simulating frontend)...');
     
     const consentData = {
       consentDuration: {
@@ -74,10 +70,6 @@ async function testCompleteFlow() {
       context: []
     };
 
-    console.log('📋 Consent Data (same as app):');
-    console.log(JSON.stringify(consentData, null, 2));
-    console.log('');
-
     const postData = JSON.stringify(consentData);
 
     const setuOptions = {
@@ -89,13 +81,19 @@ async function testCompleteFlow() {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData),
         'Authorization': `Bearer ${token}`,
-        'x-product-instance-id': 'e02807a8-2588-4306-83d2-5eb1e615abda'
+        'x-product-instance-id': 'e02807a8-2588-4306-83d2-5eb1e615abda',
+        'Origin': 'https://hedgrpay.com', // Simulating frontend origin
+        'Referer': 'https://hedgrpay.com/' // Simulating frontend referer
       }
     };
 
-    const consentPromise = new Promise((resolve, reject) => {
+    const setuPromise = new Promise((resolve, reject) => {
       const req = https.request(setuOptions, (res) => {
         console.log(`📡 Response Status: ${res.statusCode}`);
+        console.log(`📡 CORS Headers:`);
+        console.log(`   Access-Control-Allow-Origin: ${res.headers['access-control-allow-origin'] || 'Not set'}`);
+        console.log(`   Access-Control-Allow-Methods: ${res.headers['access-control-allow-methods'] || 'Not set'}`);
+        console.log(`   Access-Control-Allow-Headers: ${res.headers['access-control-allow-headers'] || 'Not set'}`);
         
         let data = '';
         res.on('data', (chunk) => {
@@ -103,30 +101,28 @@ async function testCompleteFlow() {
         });
         
         res.on('end', () => {
-          console.log('📡 Response Body:');
           try {
             const response = JSON.parse(data);
+            console.log('📡 Response Body:');
             console.log(JSON.stringify(response, null, 2));
             
             if (res.statusCode === 200 || res.statusCode === 201) {
-              console.log('✅ Consent creation successful!');
-              console.log(`🎯 Consent URL: ${response.url}`);
-              console.log(`🎯 Consent ID: ${response.id}`);
-              resolve(response);
+              console.log('✅ Direct Setu API call successful!');
+              console.log('🎯 This means CORS is not the issue');
             } else {
-              console.log('❌ Consent creation failed');
-              reject(new Error('Consent creation failed'));
+              console.log('❌ Direct Setu API call failed');
+              console.log('🎯 This might indicate a CORS or other issue');
             }
+            resolve(response);
           } catch (error) {
             console.log('Raw response:', data);
-            console.log('❌ Failed to parse JSON response');
             reject(error);
           }
         });
       });
 
       req.on('error', (error) => {
-        console.error('❌ Consent request failed:', error);
+        console.error('❌ Setu API request failed:', error);
         reject(error);
       });
 
@@ -134,24 +130,11 @@ async function testCompleteFlow() {
       req.end();
     });
 
-    const consentResponse = await consentPromise;
+    await setuPromise;
     
-    // Step 3: Simulate WebView opening
-    console.log('\n🌐 Step 3: Simulating WebView opening...');
-    console.log(`WebView would open with URL: ${consentResponse.url}`);
-    console.log('This URL would be passed to the WebView component');
-    console.log('User would see the Setu consent approval page');
-    
-    // Step 4: Simulate success callback
-    console.log('\n✅ Step 4: Simulating success callback...');
-    console.log('User approves consent in WebView');
-    console.log('WebView navigates to success URL');
-    console.log('App receives success callback');
-    console.log('Consent is marked as active');
-    console.log('User is redirected back to consent screen');
-    
-    console.log('\n🎉 Complete flow simulation successful!');
-    console.log('This is exactly what should happen in the app');
+    console.log('\n🎯 CORS test completed!');
+    console.log('If this test passes, the issue is likely in the frontend code');
+    console.log('If this test fails, there might be a CORS or network issue');
     
   } catch (error) {
     console.error('❌ Test failed:', error);
@@ -159,8 +142,8 @@ async function testCompleteFlow() {
 }
 
 // Run the test
-testCompleteFlow().then(() => {
-  console.log('\n🎯 Complete flow test finished!');
+testCorsIssue().then(() => {
+  console.log('\n🎯 CORS issue test finished!');
 }).catch((error) => {
   console.error('❌ Test failed:', error);
 });

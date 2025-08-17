@@ -9,12 +9,15 @@ import { ConsentStatus } from '../../components/financial/ConsentStatus/ConsentS
 import { ConfigTest } from '../../components/common/ConfigTest';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useConsent } from '../../hooks/useConsent';
+import { simpleTokenService } from '../../services/auth/simpleTokenService';
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation();
   const { accounts, loading: accountsLoading, refreshAccounts } = useAccounts();
   const { consents, loading: consentsLoading, refreshConsents } = useConsent();
   const [showConfigTest, setShowConfigTest] = useState(false);
+  const [tokenInfo, setTokenInfo] = useState<any>(null);
+  const [fetchingToken, setFetchingToken] = useState(false);
 
   const handleRefresh = () => {
     refreshAccounts();
@@ -54,6 +57,52 @@ export const HomeScreen: React.FC = () => {
     setShowConfigTest(true);
   };
 
+  const handleFetchToken = async () => {
+    try {
+      setFetchingToken(true);
+      console.log('🔐 Fetching Setu token...');
+      
+      const token = await simpleTokenService.fetchToken();
+      const info = await simpleTokenService.getTokenInfo();
+      setTokenInfo(info);
+      
+      Alert.alert('Success', 'Token fetched successfully!');
+      console.log('✅ Token fetched:', token);
+      
+    } catch (error) {
+      console.error('❌ Token fetch failed:', error);
+      Alert.alert('Error', `Failed to fetch token: ${error.message}`);
+    } finally {
+      setFetchingToken(false);
+    }
+  };
+
+  const handleClearToken = async () => {
+    try {
+      await simpleTokenService.clearToken();
+      setTokenInfo(null);
+      Alert.alert('Success', 'Token cleared successfully!');
+      console.log('✅ Token cleared');
+    } catch (error) {
+      console.error('❌ Clear token failed:', error);
+      Alert.alert('Error', 'Failed to clear token');
+    }
+  };
+
+  // Check token status on component mount
+  React.useEffect(() => {
+    const checkTokenStatus = async () => {
+      try {
+        const info = await simpleTokenService.getTokenInfo();
+        setTokenInfo(info);
+      } catch (error) {
+        console.error('Error checking token status:', error);
+      }
+    };
+    
+    checkTokenStatus();
+  }, []);
+
   if (showConfigTest) {
     return (
       <SafeAreaView style={styles.container}>
@@ -85,13 +134,28 @@ export const HomeScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.title}>Setu AA Dashboard</Text>
           <Text style={styles.subtitle}>Account Aggregator Framework</Text>
+          {tokenInfo && (
+            <View style={styles.tokenStatus}>
+              <Text style={styles.tokenStatusText}>
+                🔑 Token: {tokenInfo.isValid ? 'Valid' : 'Expired'} 
+                {tokenInfo.timeUntilExpiry && ` (${Math.floor(tokenInfo.timeUntilExpiry / 60)}m left)`}
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.actions}>
           <Button
+            title={fetchingToken ? "Fetching Token..." : "🔐 Fetch Token"}
+            onPress={handleFetchToken}
+            disabled={fetchingToken}
+            variant="primary"
+            size="large"
+          />
+          <Button
             title="Create Consent"
             onPress={handleCreateConsent}
-            variant="primary"
+            variant="outline"
             size="large"
           />
           <Button
@@ -137,6 +201,19 @@ export const HomeScreen: React.FC = () => {
           ) : (
             <Text style={styles.emptyText}>No connected accounts</Text>
           )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Token Management</Text>
+          <Button
+            title="🗑️ Clear Token"
+            onPress={handleClearToken}
+            variant="outline"
+            size="medium"
+          />
+          <Text style={styles.configText}>
+            Clear the stored authentication token.
+          </Text>
         </View>
 
         <View style={styles.section}>

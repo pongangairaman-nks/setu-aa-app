@@ -1,35 +1,72 @@
 import { apiClient } from './apiClient';
 import { setuDirectApiClient } from './setuDirectApi';
-import { setuTokenService } from '../auth/setuTokenService';
+import { simpleTokenService } from '../auth/simpleTokenService';
 import { API_ENDPOINTS, buildUrl } from './endpoints';
 import { 
   ConsentRequest, 
   ConsentResponse, 
   AccountResponse, 
-  TransactionResponse,
-  FetchDataRequest 
+  TransactionResponse, 
+  FetchDataRequest,
+  SandboxConsentRequest
 } from '../../types/api';
 import { ENV } from '../../config/environment';
 
 export class SetuApi {
-  // Consent Management - Route through backend to avoid CORS
-  async createConsentRequest(request: ConsentRequest): Promise<ConsentResponse> {
+  // Consent Management - Direct to Setu API with proper CORS handling
+  async createConsentRequest(request: ConsentRequest | SandboxConsentRequest): Promise<ConsentResponse> {
     try {
       if (ENV.IS_DEVELOPMENT) {
-        console.log('🔐 Creating consent request via backend:', request);
+        console.log('🔐 Creating consent request directly with Setu API:', request);
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
+      console.log('🔑 Using token:', token.substring(0, 50) + '...');
       
-      // Route through backend to avoid CORS issues
-      return await apiClient.post<ConsentResponse>('/setu/consents', request, {
+      // Make request through local proxy to avoid CORS
+      const response = await fetch(`http://localhost:3001/api/setu-proxy/v2/consents`, {
+        method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'x-product-instance-id': ENV.SETU_PRODUCT_ID,
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        mode: 'cors', // Explicitly set CORS mode
+        credentials: 'omit', // Don't send credentials
+        body: JSON.stringify(request)
       });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ API Error:', errorData);
+        throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ API Response:', result);
+      return result;
     } catch (error) {
       console.error('❌ Failed to create consent request:', error);
+      
+      // If CORS error, try alternative approach
+      if (error instanceof Error && (error.message.includes('CORS') || error.message.includes('NetworkError'))) {
+        console.log('🔄 CORS error detected, trying backend proxy...');
+        try {
+          const backendResponse = await apiClient.post<ConsentResponse>('/setu/consents', request);
+          console.log('✅ Backend proxy successful:', backendResponse);
+          return backendResponse;
+        } catch (backendError) {
+          console.error('❌ Backend proxy also failed:', backendError);
+          throw new Error('Both direct API and backend proxy failed. Please check your configuration.');
+        }
+      }
+      
       throw error;
     }
   }
@@ -41,7 +78,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`, {
         headers: {
@@ -61,7 +98,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.post<{ status: string; traceId: string }>(`/setu/consents/${consentId}/revoke`, {}, {
         headers: {
@@ -81,7 +118,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}`, {
         headers: {
@@ -101,7 +138,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<any>(`/setu/consents/${consentId}/fetch/status`, {
         headers: {
@@ -121,7 +158,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<any>(`/setu/consents/${consentId}/data-sessions`, {
         headers: {
@@ -142,7 +179,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.post<any>('/setu/consents/collection', {
         optionalConsents,
@@ -166,7 +203,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.post<any>('/setu/data/fetch', request, {
         headers: {
@@ -186,7 +223,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<any>('/setu/data/sessions', {
         headers: {
@@ -207,7 +244,7 @@ export class SetuApi {
       }
       
       // Get valid token first
-      const token = await setuTokenService.getValidToken();
+      const token = await simpleTokenService.getValidToken();
       
       return await apiClient.get<{ fips: Array<{ id: string; name: string }> }>('/setu/fips', {
         headers: {
@@ -227,7 +264,7 @@ export class SetuApi {
         console.log('🔐 Fetching new Setu token...');
       }
       
-      const token = await setuTokenService.fetchToken();
+      const token = await simpleTokenService.fetchToken();
       
       if (ENV.IS_DEVELOPMENT) {
         console.log('✅ Token fetched successfully');
@@ -242,7 +279,7 @@ export class SetuApi {
 
   async getTokenInfo(): Promise<any> {
     try {
-      return await setuTokenService.getTokenInfo();
+      return await simpleTokenService.getTokenInfo();
     } catch (error) {
       console.error('❌ Failed to get token info:', error);
       throw error;
@@ -251,7 +288,7 @@ export class SetuApi {
 
   async clearToken(): Promise<void> {
     try {
-      await setuTokenService.clearToken();
+      await simpleTokenService.clearToken();
       
       if (ENV.IS_DEVELOPMENT) {
         console.log('🗑️ Token cleared successfully');

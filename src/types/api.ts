@@ -52,6 +52,21 @@ export interface ConsentRequest {
   enableAdditionalPhoneNumber?: boolean;
 }
 
+// Sandbox API Consent Request Type (simpler format)
+export interface SandboxConsentRequest {
+  consentDuration: {
+    unit: 'MONTH' | 'YEAR' | 'DAY';
+    value: string;
+  };
+  vua: string;
+  dataRange: {
+    from: string;
+    to: string;
+  };
+  consentTypes: Array<'PROFILE' | 'SUMMARY' | 'TRANSACTIONS'>;
+  context: Array<any>;
+}
+
 export interface ConsentResponse {
   id: string;
   url: string;

@@ -1,11 +1,11 @@
 const https = require('https');
 
-// Test complete consent creation flow
-async function testCompleteFlow() {
-  console.log('🧪 Testing Complete Consent Creation Flow\n');
+// Test direct Setu API call
+async function testDirectSetuAPI() {
+  console.log('🧪 Testing Direct Setu API Call\n');
 
-  // Step 1: Get token (simulating "Fetch Token" button)
-  console.log('🔐 Step 1: Getting token (Fetch Token button)...');
+  // Step 1: Get token from our backend
+  console.log('🔐 Step 1: Getting token from backend...');
   
   const tokenOptions = {
     hostname: 'hedgrpay.com',
@@ -28,7 +28,7 @@ async function testCompleteFlow() {
         try {
           const response = JSON.parse(data);
           if (res.statusCode === 200 && response.success) {
-            console.log('✅ Token obtained successfully (Fetch Token button)');
+            console.log('✅ Token obtained successfully');
             console.log(`Token: ${response.data.access_token.substring(0, 50)}...`);
             resolve(response.data.access_token);
           } else {
@@ -53,8 +53,8 @@ async function testCompleteFlow() {
   try {
     const token = await tokenPromise;
     
-    // Step 2: Create consent (simulating "Create Consent" button)
-    console.log('\n📋 Step 2: Creating consent (Create Consent button)...');
+    // Step 2: Make direct call to Setu API
+    console.log('\n📋 Step 2: Making direct call to Setu API...');
     
     const consentData = {
       consentDuration: {
@@ -74,7 +74,7 @@ async function testCompleteFlow() {
       context: []
     };
 
-    console.log('📋 Consent Data (same as app):');
+    console.log('📋 Consent Data:');
     console.log(JSON.stringify(consentData, null, 2));
     console.log('');
 
@@ -93,7 +93,7 @@ async function testCompleteFlow() {
       }
     };
 
-    const consentPromise = new Promise((resolve, reject) => {
+    const setuPromise = new Promise((resolve, reject) => {
       const req = https.request(setuOptions, (res) => {
         console.log(`📡 Response Status: ${res.statusCode}`);
         
@@ -109,24 +109,21 @@ async function testCompleteFlow() {
             console.log(JSON.stringify(response, null, 2));
             
             if (res.statusCode === 200 || res.statusCode === 201) {
-              console.log('✅ Consent creation successful!');
+              console.log('✅ Direct Setu API call successful!');
               console.log(`🎯 Consent URL: ${response.url}`);
-              console.log(`🎯 Consent ID: ${response.id}`);
-              resolve(response);
             } else {
-              console.log('❌ Consent creation failed');
-              reject(new Error('Consent creation failed'));
+              console.log('❌ Direct Setu API call failed');
             }
           } catch (error) {
             console.log('Raw response:', data);
             console.log('❌ Failed to parse JSON response');
-            reject(error);
           }
+          resolve();
         });
       });
 
       req.on('error', (error) => {
-        console.error('❌ Consent request failed:', error);
+        console.error('❌ Setu API request failed:', error);
         reject(error);
       });
 
@@ -134,24 +131,7 @@ async function testCompleteFlow() {
       req.end();
     });
 
-    const consentResponse = await consentPromise;
-    
-    // Step 3: Simulate WebView opening
-    console.log('\n🌐 Step 3: Simulating WebView opening...');
-    console.log(`WebView would open with URL: ${consentResponse.url}`);
-    console.log('This URL would be passed to the WebView component');
-    console.log('User would see the Setu consent approval page');
-    
-    // Step 4: Simulate success callback
-    console.log('\n✅ Step 4: Simulating success callback...');
-    console.log('User approves consent in WebView');
-    console.log('WebView navigates to success URL');
-    console.log('App receives success callback');
-    console.log('Consent is marked as active');
-    console.log('User is redirected back to consent screen');
-    
-    console.log('\n🎉 Complete flow simulation successful!');
-    console.log('This is exactly what should happen in the app');
+    await setuPromise;
     
   } catch (error) {
     console.error('❌ Test failed:', error);
@@ -159,8 +139,8 @@ async function testCompleteFlow() {
 }
 
 // Run the test
-testCompleteFlow().then(() => {
-  console.log('\n🎯 Complete flow test finished!');
+testDirectSetuAPI().then(() => {
+  console.log('\n🎯 Direct Setu API test completed!');
 }).catch((error) => {
   console.error('❌ Test failed:', error);
 });

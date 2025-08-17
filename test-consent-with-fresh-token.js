@@ -1,11 +1,11 @@
 const https = require('https');
 
-// Test complete consent creation flow
-async function testCompleteFlow() {
-  console.log('🧪 Testing Complete Consent Creation Flow\n');
+// Get fresh token and create consent
+async function testConsentWithFreshToken() {
+  console.log('🧪 Testing Consent Creation with Fresh Sandbox Token\n');
 
-  // Step 1: Get token (simulating "Fetch Token" button)
-  console.log('🔐 Step 1: Getting token (Fetch Token button)...');
+  // Step 1: Get fresh token
+  console.log('🔐 Step 1: Getting fresh sandbox token...');
   
   const tokenOptions = {
     hostname: 'hedgrpay.com',
@@ -28,7 +28,7 @@ async function testCompleteFlow() {
         try {
           const response = JSON.parse(data);
           if (res.statusCode === 200 && response.success) {
-            console.log('✅ Token obtained successfully (Fetch Token button)');
+            console.log('✅ Fresh token obtained successfully');
             console.log(`Token: ${response.data.access_token.substring(0, 50)}...`);
             resolve(response.data.access_token);
           } else {
@@ -53,8 +53,8 @@ async function testCompleteFlow() {
   try {
     const token = await tokenPromise;
     
-    // Step 2: Create consent (simulating "Create Consent" button)
-    console.log('\n📋 Step 2: Creating consent (Create Consent button)...');
+    // Step 2: Create consent with fresh token
+    console.log('\n📋 Step 2: Creating consent with fresh token...');
     
     const consentData = {
       consentDuration: {
@@ -74,27 +74,26 @@ async function testCompleteFlow() {
       context: []
     };
 
-    console.log('📋 Consent Data (same as app):');
+    console.log('📋 Consent Data:');
     console.log(JSON.stringify(consentData, null, 2));
     console.log('');
 
     const postData = JSON.stringify(consentData);
 
-    const setuOptions = {
-      hostname: 'fiu-sandbox.setu.co',
+    const consentOptions = {
+      hostname: 'hedgrpay.com',
       port: 443,
-      path: '/v2/consents',
+      path: '/api/setu/consents',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(postData),
-        'Authorization': `Bearer ${token}`,
-        'x-product-instance-id': 'e02807a8-2588-4306-83d2-5eb1e615abda'
+        'Authorization': `Bearer ${token}`
       }
     };
 
     const consentPromise = new Promise((resolve, reject) => {
-      const req = https.request(setuOptions, (res) => {
+      const req = https.request(consentOptions, (res) => {
         console.log(`📡 Response Status: ${res.statusCode}`);
         
         let data = '';
@@ -111,17 +110,14 @@ async function testCompleteFlow() {
             if (res.statusCode === 200 || res.statusCode === 201) {
               console.log('✅ Consent creation successful!');
               console.log(`🎯 Consent URL: ${response.url}`);
-              console.log(`🎯 Consent ID: ${response.id}`);
-              resolve(response);
             } else {
               console.log('❌ Consent creation failed');
-              reject(new Error('Consent creation failed'));
             }
           } catch (error) {
             console.log('Raw response:', data);
             console.log('❌ Failed to parse JSON response');
-            reject(error);
           }
+          resolve();
         });
       });
 
@@ -134,24 +130,7 @@ async function testCompleteFlow() {
       req.end();
     });
 
-    const consentResponse = await consentPromise;
-    
-    // Step 3: Simulate WebView opening
-    console.log('\n🌐 Step 3: Simulating WebView opening...');
-    console.log(`WebView would open with URL: ${consentResponse.url}`);
-    console.log('This URL would be passed to the WebView component');
-    console.log('User would see the Setu consent approval page');
-    
-    // Step 4: Simulate success callback
-    console.log('\n✅ Step 4: Simulating success callback...');
-    console.log('User approves consent in WebView');
-    console.log('WebView navigates to success URL');
-    console.log('App receives success callback');
-    console.log('Consent is marked as active');
-    console.log('User is redirected back to consent screen');
-    
-    console.log('\n🎉 Complete flow simulation successful!');
-    console.log('This is exactly what should happen in the app');
+    await consentPromise;
     
   } catch (error) {
     console.error('❌ Test failed:', error);
@@ -159,8 +138,8 @@ async function testCompleteFlow() {
 }
 
 // Run the test
-testCompleteFlow().then(() => {
-  console.log('\n🎯 Complete flow test finished!');
+testConsentWithFreshToken().then(() => {
+  console.log('\n🎯 Consent creation test completed!');
 }).catch((error) => {
   console.error('❌ Test failed:', error);
 });
