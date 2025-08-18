@@ -22,43 +22,45 @@ export const LoginScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Error', 'Please enter both email and password');
-      return;
-    }
+    navigation.navigate('Main' as never);
 
-    try {
-      setIsLoading(true);
-      console.log('🔐 Starting login process...');
+    // if (!email.trim() || !password.trim()) {
+    //   Alert.alert('Error', 'Please enter both email and password');
+    //   return;
+    // }
+
+    // try {
+    //   setIsLoading(true);
+    //   console.log('🔐 Starting login process...');
       
-      const response = await userAuthService.login({ email, password });
+    //   const response = await userAuthService.login({ email, password });
       
-      console.log('✅ Login successful');
-      navigation.navigate('Main' as never);
-      Alert.alert(
-        'Success', 
-        `Welcome back, ${response.user.name}!`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              console.log('🚀 Navigating to main app...');
-              navigation.navigate('Main' as never);
-            }
-          }
-        ]
-      );
+    //   console.log('✅ Login successful');
+    //   navigation.navigate('Main' as never);
+    //   Alert.alert(
+    //     'Success', 
+    //     `Welcome back, ${response.user.name}!`,
+    //     [
+    //       {
+    //         text: 'Continue',
+    //         onPress: () => {
+    //           console.log('🚀 Navigating to main app...');
+    //           navigation.navigate('Main' as never);
+    //         }
+    //       }
+    //     ]
+    //   );
       
-    } catch (error: any) {
-      console.error('❌ Login failed:', error);
-      Alert.alert(
-        'Login Failed', 
-        error.response?.data?.error?.message || error.message || 'Failed to login',
-        [{ text: 'Try Again' }]
-      );
-    } finally {
-      setIsLoading(false);
-    }
+    // } catch (error: any) {
+    //   console.error('❌ Login failed:', error);
+    //   Alert.alert(
+    //     'Login Failed', 
+    //     error.response?.data?.error?.message || error.message || 'Failed to login',
+    //     [{ text: 'Try Again' }]
+    //   );
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
 
   const handleRegister = () => {

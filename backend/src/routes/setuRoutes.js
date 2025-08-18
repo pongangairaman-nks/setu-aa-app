@@ -6,7 +6,7 @@ const setuTokenManager = require('../services/setuTokenManager');
 
 // Setu API configuration
 const SETU_CONFIG = {
-  API_URL: 'https://fiu-sandbox.setu.co',
+  API_URL: process.env.SETU_BASE_URL || 'https://fiu-sandbox.setu.co',
   PRODUCT_ID: process.env.SETU_PRODUCT_ID || 'e02807a8-2588-4306-83d2-5eb1e615abda'
 };
 
@@ -80,7 +80,7 @@ async function makeSetuRequest(method, endpoint, data = null) {
 router.post('/consents', async (req, res) => {
   try {
     logger.info('Creating Setu consent request:', req.body);
-    const result = await makeSetuRequest('POST', '/consents', req.body);
+    const result = await makeSetuRequest('POST', '/v2/consents', req.body);
     res.json(result);
   } catch (error) {
     logger.error('Error creating consent:', error.message);
@@ -94,7 +94,7 @@ router.get('/consents/:consentId', async (req, res) => {
   try {
     const { consentId } = req.params;
     logger.info('Getting Setu consent:', consentId);
-    const result = await makeSetuRequest('GET', `/consents/${consentId}`);
+    const result = await makeSetuRequest('GET', `/v2/consents/${consentId}`);
     res.json(result);
   } catch (error) {
     logger.error('Error getting consent:', error.message);
@@ -108,7 +108,7 @@ router.post('/consents/:consentId/revoke', async (req, res) => {
   try {
     const { consentId } = req.params;
     logger.info('Revoking Setu consent:', consentId);
-    const result = await makeSetuRequest('POST', `/consents/${consentId}/revoke`);
+    const result = await makeSetuRequest('POST', `/v2/consents/${consentId}/revoke`);
     res.json(result);
   } catch (error) {
     logger.error('Error revoking consent:', error.message);
@@ -122,7 +122,7 @@ router.get('/consents/:consentId/fetch/status', async (req, res) => {
   try {
     const { consentId } = req.params;
     logger.info('Getting Setu consent fetch status:', consentId);
-    const result = await makeSetuRequest('GET', `/consents/${consentId}/fetch/status`);
+    const result = await makeSetuRequest('GET', `/v2/consents/${consentId}/fetch/status`);
     res.json(result);
   } catch (error) {
     logger.error('Error getting consent fetch status:', error.message);
@@ -136,7 +136,7 @@ router.get('/consents/:consentId/data-sessions', async (req, res) => {
   try {
     const { consentId } = req.params;
     logger.info('Getting Setu consent data sessions:', consentId);
-    const result = await makeSetuRequest('GET', `/consents/${consentId}/data-sessions`);
+    const result = await makeSetuRequest('GET', `/v2/consents/${consentId}/data-sessions`);
     res.json(result);
   } catch (error) {
     logger.error('Error getting consent data sessions:', error.message);
@@ -221,5 +221,7 @@ router.get('/health', async (req, res) => {
     });
   }
 });
+
+
 
 module.exports = router;

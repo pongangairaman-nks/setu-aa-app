@@ -15,7 +15,7 @@ const accountRoutes = require('./src/routes/accountRoutes');
 const transactionRoutes = require('./src/routes/transactionRoutes');
 const webhookRoutes = require('./src/routes/webhookRoutes');
 const setuRoutes = require('./src/routes/setuRoutes');
-const authRoutes = require('./src/routes/authRoutes');
+
 const userAuthRoutes = require('./src/routes/userAuthRoutes');
 
 const app = express();
@@ -106,7 +106,7 @@ app.use('/api/accounts', accountRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/setu', setuRoutes); // Add Setu API proxy routes
-app.use('/api/setu-auth', authRoutes); // Add Setu auth routes (for Setu token management)
+
 app.use('/api/auth', userAuthRoutes); // Add user auth routes (for user authentication)
 
 // Error handling middleware

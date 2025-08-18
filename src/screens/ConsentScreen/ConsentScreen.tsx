@@ -27,7 +27,7 @@ export const ConsentScreen: React.FC = () => {
   const handleCreateConsent = async () => {
     try {
       console.log('🚀 Starting consent creation process...');
-      setCreatingConsent(true);
+      // setCreatingConsent(true);
       
       // Create consent request with redirect URL - Updated to match working curl format
       const consentData: SandboxConsentRequest = {
