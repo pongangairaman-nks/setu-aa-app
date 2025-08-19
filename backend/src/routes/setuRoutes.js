@@ -166,6 +166,74 @@ router.get('/consents/:consentId/details', async (req, res) => {
   }
 });
 
+// Data Session Management
+router.post('/sessions', authenticateToken, async (req, res) => {
+  try {
+    const { consentId, dataRange, format = 'json' } = req.body;
+    logger.info('Creating data session with consent ID:', consentId);
+    
+    // Validate required fields
+    if (!consentId) {
+      return res.status(400).json({
+        error: { message: 'consentId is required in request body' }
+      });
+    }
+    
+    if (!dataRange || !dataRange.from || !dataRange.to) {
+      return res.status(400).json({
+        error: { message: 'dataRange with from and to dates is required' }
+      });
+    }
+    
+    const requestBody = {
+      consentId,
+      dataRange,
+      format
+    };
+    
+    logger.info('Sending request to Setu API:', requestBody);
+    const result = await makeSetuRequest('POST', '/v2/sessions', requestBody);
+    logger.info('Data session created successfully:', result);
+    
+    res.json(result);
+  } catch (error) {
+    logger.error('Error creating data session:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data || { message: 'Failed to create data session' }
+    });
+  }
+});
+
+router.get('/sessions/:sessionId', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    logger.info('Getting data session:', sessionId);
+    
+    const result = await makeSetuRequest('GET', `/v2/sessions/${sessionId}`);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error getting data session:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data || { message: 'Failed to get data session' }
+    });
+  }
+});
+
+router.get('/sessions/:sessionId/data', authenticateToken, async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    logger.info('Fetching FI data for session:', sessionId);
+    
+    const result = await makeSetuRequest('GET', `/v2/sessions/${sessionId}/data`);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error fetching FI data:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data || { message: 'Failed to fetch FI data' }
+    });
+  }
+});
+
 router.post('/consents/:consentId/revoke', async (req, res) => {
   try {
     const { consentId } = req.params;

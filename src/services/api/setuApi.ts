@@ -58,6 +58,54 @@ export class SetuApi {
     }
   }
 
+  // Data Session Management
+  async createDataSession(consentId: string, dataRange: { from: string; to: string }, format: 'json' | 'xml' = 'json'): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Creating data session via backend:', { consentId, dataRange, format });
+      }
+      
+      // Send consent ID in request body as required by backend
+      const requestBody = {
+        consentId,
+        dataRange,
+        format
+      };
+      
+      console.log('📤 Sending request body to backend:', requestBody);
+      return await apiClient.post<any>('/setu/sessions', requestBody);
+    } catch (error) {
+      console.error('❌ Failed to create data session:', error);
+      throw error;
+    }
+  }
+
+  async getDataSession(sessionId: string): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Getting data session via backend:', sessionId);
+      }
+      
+      return await apiClient.get<any>(`/setu/sessions/${sessionId}`);
+    } catch (error) {
+      console.error('❌ Failed to get data session:', error);
+      throw error;
+    }
+  }
+
+  async fetchFIData(sessionId: string): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('📊 Fetching FI data via backend:', sessionId);
+      }
+      
+      return await apiClient.get<any>(`/setu/sessions/${sessionId}/data`);
+    } catch (error) {
+      console.error('❌ Failed to fetch FI data:', error);
+      throw error;
+    }
+  }
+
   async revokeConsentRequest(consentId: string): Promise<{ status: string; traceId: string }> {
     try {
       if (ENV.IS_DEVELOPMENT) {

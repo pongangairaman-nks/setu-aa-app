@@ -171,6 +171,36 @@ export interface ApiError {
   details?: any;
 }
 
+// Data Session Types
+export interface DataSessionRequest {
+  consentId: string;
+  dataRange: {
+    from: string;
+    to: string;
+  };
+  format: 'json' | 'xml';
+}
+
+export interface DataSessionResponse {
+  format: 'json' | 'xml';
+  fips: any[] | null;
+  dataRange: {
+    to: string;
+    from: string;
+  };
+  id: string;
+  status: 'PENDING' | 'READY' | 'FAILED';
+  consentId: string;
+  traceId: string;
+}
+
+export interface FIDataResponse {
+  sessionId: string;
+  data: any;
+  status: string;
+  traceId: string;
+}
+
 // Generic API Response
 export interface ApiResponse<T> {
   success: boolean;

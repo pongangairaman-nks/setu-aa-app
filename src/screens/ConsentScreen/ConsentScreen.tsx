@@ -9,6 +9,7 @@ import { Button } from '../../components/common/Button/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner/LoadingSpinner';
 import { ConsentStatus } from '../../components/financial/ConsentStatus/ConsentStatus';
 import { useConsent } from '../../hooks/useConsent';
+import { useDataSession } from '../../hooks/useDataSession';
 import { useWebView } from '../../hooks/useWebView';
 import { setuApi } from '../../services/api/setuApi';
 import { useSelector, useDispatch } from 'react-redux';
@@ -27,6 +28,7 @@ export const ConsentScreen: React.FC = () => {
   const user = useSelector((state: RootState) => state.user.user);
   const { consents, loading, refreshConsents, revokeConsent } = useConsent();
   const { openWebView } = useWebView();
+  const { createDataSession, loading: dataSessionLoading } = useDataSession();
   const [creatingConsent, setCreatingConsent] = useState(false);
 
   // Get user's consent details from Redux store
@@ -113,6 +115,44 @@ export const ConsentScreen: React.FC = () => {
         },
       ]
     );
+  };
+
+  const handleFetchData = async () => {
+    if (!userConsentDetails?.consentId) {
+      Alert.alert('Error', 'No consent ID found');
+      return;
+    }
+
+    try {
+      console.log('📊 Creating data session for consent:', userConsentDetails.consentId);
+      
+      // Create data range (last 6 months)
+      const toDate = new Date();
+      const fromDate = new Date();
+      fromDate.setMonth(fromDate.getMonth() - 6);
+      
+      const dataRange = {
+        from: fromDate.toISOString(),
+        to: toDate.toISOString()
+      };
+      
+      const session = await createDataSession(userConsentDetails.consentId, dataRange, 'json');
+      
+      if (session) {
+        Alert.alert(
+          '✅ Data Session Created',
+          `Data session created successfully with ID: ${session.id}\nStatus: ${session.status}\n\nSetu will notify when data is ready to fetch.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error creating data session:', error);
+      Alert.alert(
+        '❌ Data Session Creation Failed',
+        'Failed to create data session. Please try again later.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const handleCreateConsent = async () => {
@@ -306,6 +346,8 @@ export const ConsentScreen: React.FC = () => {
                   isUserConsent={true}
                   onRevoke={handleRevokeConsent}
                   showRevokeButton={true}
+                  onFetchData={handleFetchData}
+                  showFetchDataButton={true}
                 />
               ) : (
                 <ConsentStatus
@@ -329,6 +371,8 @@ export const ConsentScreen: React.FC = () => {
                   isUserConsent={true}
                   onRevoke={handleRevokeConsent}
                   showRevokeButton={true}
+                  onFetchData={handleFetchData}
+                  showFetchDataButton={true}
                 />
               )}
             </View>

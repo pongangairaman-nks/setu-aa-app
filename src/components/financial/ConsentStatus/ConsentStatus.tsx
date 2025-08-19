@@ -11,6 +11,8 @@ interface ConsentStatusProps {
   isUserConsent?: boolean;
   onRevoke?: () => void;
   showRevokeButton?: boolean;
+  onFetchData?: () => void;
+  showFetchDataButton?: boolean;
 }
 
 export const ConsentStatus: React.FC<ConsentStatusProps> = ({
@@ -20,6 +22,8 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
   isUserConsent = false,
   onRevoke,
   showRevokeButton = false,
+  onFetchData,
+  showFetchDataButton = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -112,17 +116,28 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
           </View>
         </>
       )}
-      {/* Revoke Button */}
-      {showRevokeButton && onRevoke && (consent.status === 'ACTIVE' || consent.status === 'APPROVED') && (
-        <View style={styles.revokeButtonContainer}>
+      {/* Action Buttons */}
+      <View style={styles.actionButtonsContainer}>
+        {/* Fetch Data Button */}
+        {showFetchDataButton && onFetchData && (consent.status === 'ACTIVE' || consent.status === 'APPROVED') && (
+          <Button
+            title="Fetch Data"
+            onPress={onFetchData}
+            variant="primary"
+            size="small"
+          />
+        )}
+        
+        {/* Revoke Button */}
+        {showRevokeButton && onRevoke && (consent.status === 'ACTIVE' || consent.status === 'APPROVED') && (
           <Button
             title="Revoke Consent"
             onPress={onRevoke}
             variant="danger"
             size="small"
           />
-        </View>
-      )}
+        )}
+      </View>
     </CardComponent>
   );
 }; 
