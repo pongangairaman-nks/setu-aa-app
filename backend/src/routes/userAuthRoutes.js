@@ -32,11 +32,15 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Generate a unique username from email
+    const username = email.split('@')[0] + '_' + Date.now();
+    
     // Create new user (password will be hashed by the User model pre-save middleware)
     const user = new User({
       email,
       password,
-      name
+      name,
+      username
     });
 
     await user.save();
@@ -54,8 +58,15 @@ router.post('/register', async (req, res) => {
     res.status(201).json(userResponse);
   } catch (error) {
     logger.error('Registration error:', error);
+    console.error('Registration error details:', error);
+    
+    // Return more detailed error information
     res.status(500).json({
-      error: { message: 'Failed to register user' }
+      error: { 
+        message: 'Failed to register user',
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }
     });
   }
 });

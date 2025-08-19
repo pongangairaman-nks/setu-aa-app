@@ -43,6 +43,7 @@ echo -e "${GREEN}✅ Deployment package created: backend-deploy.tar.gz${NC}"
 # Step 2: Upload to EC2
 echo -e "\n${YELLOW}📤 Uploading to EC2...${NC}"
 scp -i "$PEM_FILE" backend-deploy.tar.gz $EC2_USER@$EC2_HOST:~/
+scp -i "$PEM_FILE" $BACKEND_DIR/.env $EC2_USER@$EC2_HOST:~/
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Upload successful${NC}"
@@ -87,9 +88,16 @@ ssh -i "$PEM_FILE" $EC2_USER@$EC2_HOST << 'EOF'
     echo "📦 Installing dependencies..."
     npm install --production
     
-    # Create .env file if it doesn't exist
-    if [ ! -f .env ]; then
-        echo "📝 Creating .env file..."
+    # Copy the actual .env file from local to remote
+    echo "📝 Copying .env file..."
+    if [ -f ~/.env ]; then
+        echo "✅ .env file found and copying to project directory"
+        cp ~/.env .env
+        rm ~/.env
+    elif [ -f .env ]; then
+        echo "✅ .env file found in project directory"
+    else
+        echo "⚠️  No .env file found, creating from env.example"
         cp env.example .env
         echo "⚠️  Please update the .env file with your actual configuration"
     fi

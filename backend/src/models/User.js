@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
     trim: true,
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
   },
+  username: {
+    type: String,
+    unique: true,
+    trim: true
+  },
   password: {
     type: String,
     required: true,
@@ -50,16 +55,17 @@ userSchema.virtual('isLocked').get(function() {
 });
 
 // Pre-save middleware to hash password
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', function(next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
 
+  // Use synchronous hashing to avoid async issues
   try {
-    // Hash password with salt rounds of 10
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const salt = bcrypt.genSaltSync(10);
+    this.password = bcrypt.hashSync(this.password, salt);
     next();
   } catch (error) {
+    console.error('Password hashing error:', error);
     next(error);
   }
 });

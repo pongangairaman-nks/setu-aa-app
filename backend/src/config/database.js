@@ -13,10 +13,11 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,
       retryWrites: true,
       w: 'majority',
-      ssl: true,
-      tlsAllowInvalidCertificates: true,
-      directConnection: false,
-      family: 4 // Force IPv4
+      // Remove SSL settings that might be causing issues
+      // ssl: true,
+      // tlsAllowInvalidCertificates: true,
+      // directConnection: false,
+      // family: 4 // Force IPv4
     };
 
     logger.info('Attempting to connect to MongoDB...');
