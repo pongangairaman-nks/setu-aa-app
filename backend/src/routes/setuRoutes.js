@@ -3,6 +3,8 @@ const router = express.Router();
 const axios = require('axios');
 const logger = require('../utils/logger');
 const setuTokenManager = require('../services/setuTokenManager');
+const User = require('../models/User');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 // Setu API configuration
 const SETU_CONFIG = {
@@ -77,10 +79,45 @@ async function makeSetuRequest(method, endpoint, data = null) {
 }
 
 // Consent routes
-router.post('/consents', async (req, res) => {
+router.post('/consents', authenticateToken, async (req, res) => {
   try {
     logger.info('Creating Setu consent request:', req.body);
     const result = await makeSetuRequest('POST', '/v2/consents', req.body);
+    
+    // Update user's consent details if consent was created successfully
+    if (result && result.id) {
+      try {
+        // Get user ID from authenticated request
+        const userId = req.user?.id;
+        
+        if (userId) {
+          // Update user's consent details
+          const user = await User.findByIdAndUpdate(
+            userId,
+            {
+              'consentDetails.consentId': result.id,
+              'consentDetails.consentStatus': 'PENDING',
+              'consentDetails.consentCreatedAt': new Date(),
+              'consentDetails.consentUpdatedAt': new Date(),
+              'consentDetails.consentExpiresAt': new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+            },
+            { new: true }
+          );
+
+          if (user) {
+            logger.info(`User consent details updated: ${user.email} -> ${result.id}`);
+          } else {
+            logger.warn(`No user found with ID: ${userId}`);
+          }
+        } else {
+          logger.warn('No user ID found in request, skipping consent details update');
+        }
+      } catch (updateError) {
+        logger.error('Error updating user consent details:', updateError);
+        // Don't fail the request if consent details update fails
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     logger.error('Error creating consent:', error.message);
