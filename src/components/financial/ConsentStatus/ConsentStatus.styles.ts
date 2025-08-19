@@ -22,11 +22,24 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  headerLeft: {
+    flex: 1,
+  },
   consentId: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
+  },
+  userConsentBadge: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#007AFF',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   statusContainer: {
     flexDirection: 'row',

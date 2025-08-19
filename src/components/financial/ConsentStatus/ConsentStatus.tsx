@@ -7,22 +7,26 @@ interface ConsentStatusProps {
   consent: Consent;
   onPress?: () => void;
   showDetails?: boolean;
+  isUserConsent?: boolean;
 }
 
 export const ConsentStatus: React.FC<ConsentStatusProps> = ({
   consent,
   onPress,
   showDetails = true,
+  isUserConsent = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'ACTIVE':
+      case 'APPROVED':
         return '#28A745';
       case 'EXPIRED':
         return '#DC3545';
       case 'PENDING':
         return '#FFC107';
       case 'REVOKED':
+      case 'REJECTED':
         return '#6C757D';
       default:
         return '#6C757D';
@@ -33,12 +37,16 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
     switch (status) {
       case 'ACTIVE':
         return 'Active';
+      case 'APPROVED':
+        return 'Approved';
       case 'EXPIRED':
         return 'Expired';
       case 'PENDING':
         return 'Pending';
       case 'REVOKED':
         return 'Revoked';
+      case 'REJECTED':
+        return 'Rejected';
       default:
         return status;
     }
@@ -47,9 +55,20 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
   const CardComponent = onPress ? TouchableOpacity : View;
 
   return (
-    <CardComponent style={styles.container} onPress={onPress}>
+    <CardComponent 
+      style={[
+        styles.container, 
+        isUserConsent && { borderColor: '#007AFF', borderWidth: 2 }
+      ]} 
+      onPress={onPress}
+    >
       <View style={styles.header}>
-        <Text style={styles.consentId}>Consent ID: {consent.consentId}</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.consentId}>Consent ID: {consent.consentId}</Text>
+          {isUserConsent && (
+            <Text style={styles.userConsentBadge}>Current</Text>
+          )}
+        </View>
         <View style={styles.statusContainer}>
           <View style={[styles.statusIndicator, { backgroundColor: getStatusColor(consent.status) }]} />
           <Text style={styles.statusText}>{getStatusText(consent.status)}</Text>

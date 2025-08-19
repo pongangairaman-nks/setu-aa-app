@@ -130,13 +130,38 @@ router.post('/consents', authenticateToken, async (req, res) => {
 router.get('/consents/:consentId', async (req, res) => {
   try {
     const { consentId } = req.params;
-    logger.info('Getting Setu consent:', consentId);
-    const result = await makeSetuRequest('GET', `/v2/consents/${consentId}`);
+    const { expanded } = req.query;
+    logger.info('Getting Setu consent:', consentId, 'expanded:', expanded);
+    
+    // Build the URL with query parameters
+    let url = `/v2/consents/${consentId}`;
+    if (expanded) {
+      url += `?expanded=${expanded}`;
+    }
+    
+    const result = await makeSetuRequest('GET', url);
     res.json(result);
   } catch (error) {
     logger.error('Error getting consent:', error.message);
     res.status(error.response?.status || 500).json({
       error: error.response?.data || { message: 'Failed to get consent' }
+    });
+  }
+});
+
+// Get consent details with expanded information
+router.get('/consents/:consentId/details', async (req, res) => {
+  try {
+    const { consentId } = req.params;
+    logger.info('Getting Setu consent details with expanded info:', consentId);
+    
+    // Always get expanded details for consent details endpoint
+    const result = await makeSetuRequest('GET', `/v2/consents/${consentId}?expanded=true`);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error getting consent details:', error.message);
+    res.status(error.response?.status || 500).json({
+      error: error.response?.data || { message: 'Failed to get consent details' }
     });
   }
 });

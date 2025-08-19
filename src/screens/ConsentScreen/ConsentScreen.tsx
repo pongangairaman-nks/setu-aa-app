@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -28,6 +28,35 @@ export const ConsentScreen: React.FC = () => {
   const { consents, loading, refreshConsents, revokeConsent } = useConsent();
   const { openWebView } = useWebView();
   const [creatingConsent, setCreatingConsent] = useState(false);
+
+  // Get user's consent details from Redux store
+  const userConsentDetails = user?.consentDetails;
+  const [consentDetails, setConsentDetails] = useState<any>(null);
+  const [loadingConsentDetails, setLoadingConsentDetails] = useState(false);
+
+  // Fetch consent details from Setu API when screen loads
+  useEffect(() => {
+    const fetchConsentDetails = async () => {
+      if (userConsentDetails?.consentId) {
+        try {
+          setLoadingConsentDetails(true);
+          console.log('🔍 Fetching consent details from Setu API:', userConsentDetails.consentId);
+          
+          const details = await setuApi.getConsentDetails(userConsentDetails.consentId);
+          console.log('✅ Consent details fetched successfully:', details);
+          
+          setConsentDetails(details);
+        } catch (error) {
+          console.error('❌ Error fetching consent details:', error);
+          // Don't show alert as user can still see basic consent info
+        } finally {
+          setLoadingConsentDetails(false);
+        }
+      }
+    };
+
+    fetchConsentDetails();
+  }, [userConsentDetails?.consentId]);
 
   const handleCreateConsent = async () => {
     try {
@@ -189,6 +218,62 @@ export const ConsentScreen: React.FC = () => {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Your Consents</Text>
+          
+          {/* Display user's consent details from Setu API */}
+          {userConsentDetails && userConsentDetails.consentId && (
+            <View style={styles.userConsentSection}>
+              <Text style={styles.userConsentTitle}>Current Consent</Text>
+              {loadingConsentDetails ? (
+                <View style={styles.loadingContainer}>
+                  <Text style={styles.loadingText}>Loading consent details...</Text>
+                </View>
+              ) : consentDetails ? (
+                <ConsentStatus
+                  consent={{
+                    consentId: consentDetails.id || userConsentDetails.consentId,
+                    status: consentDetails.status || userConsentDetails.consentStatus || 'PENDING',
+                    createdAt: consentDetails.detail?.consentStart || userConsentDetails.consentCreatedAt,
+                    updatedAt: userConsentDetails.consentUpdatedAt,
+                    expiresAt: consentDetails.detail?.consentExpiry || userConsentDetails.consentExpiresAt,
+                    fipName: 'Setu FIP',
+                    dataLife: consentDetails.detail?.dataLife?.value || 24,
+                    permissions: consentDetails.detail?.consentTypes || ['PROFILE', 'SUMMARY', 'TRANSACTIONS'],
+                    fetchType: consentDetails.detail?.fetchType || 'PERIODIC',
+                    frequency: consentDetails.detail?.frequency || { unit: 'MONTH', value: 1 }
+                  }}
+                  onPress={() => {
+                    if (consentDetails.status === 'ACTIVE' || userConsentDetails.consentStatus === 'APPROVED') {
+                      navigation.navigate('Accounts', { consentId: userConsentDetails.consentId });
+                    }
+                  }}
+                  isUserConsent={true}
+                />
+              ) : (
+                <ConsentStatus
+                  consent={{
+                    consentId: userConsentDetails.consentId,
+                    status: userConsentDetails.consentStatus || 'PENDING',
+                    createdAt: userConsentDetails.consentCreatedAt,
+                    updatedAt: userConsentDetails.consentUpdatedAt,
+                    expiresAt: userConsentDetails.consentExpiresAt,
+                    fipName: 'Setu FIP',
+                    dataLife: 24,
+                    permissions: ['PROFILE', 'SUMMARY', 'TRANSACTIONS'],
+                    fetchType: 'PERIODIC',
+                    frequency: { unit: 'MONTH', value: 1 }
+                  }}
+                  onPress={() => {
+                    if (userConsentDetails.consentStatus === 'APPROVED') {
+                      navigation.navigate('Accounts', { consentId: userConsentDetails.consentId });
+                    }
+                  }}
+                  isUserConsent={true}
+                />
+              )}
+            </View>
+          )}
+
+          {/* Display other consents from API */}
           {consents.length > 0 ? (
             consents.map((consent) => (
               <ConsentStatus
@@ -201,7 +286,7 @@ export const ConsentScreen: React.FC = () => {
                 }}
               />
             ))
-          ) : (
+          ) : !userConsentDetails?.consentId && (
             <Text style={styles.emptyText}>No consents found</Text>
           )}
         </View>

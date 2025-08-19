@@ -45,6 +45,19 @@ export class SetuApi {
     }
   }
 
+  async getConsentDetails(consentId: string): Promise<ConsentResponse> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('🔍 Fetching consent details via backend:', consentId);
+      }
+      
+      return await apiClient.get<ConsentResponse>(`/setu/consents/${consentId}/details`);
+    } catch (error) {
+      console.error('❌ Failed to get consent details:', error);
+      throw error;
+    }
+  }
+
   async revokeConsentRequest(consentId: string): Promise<{ status: string; traceId: string }> {
     try {
       if (ENV.IS_DEVELOPMENT) {

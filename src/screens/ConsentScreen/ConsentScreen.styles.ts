@@ -44,4 +44,35 @@ export const styles = StyleSheet.create({
     padding: 20,
     fontStyle: 'italic',
   },
+  userConsentSection: {
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  userConsentTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginBottom: 8,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    fontStyle: 'italic',
+  },
 }); 
