@@ -48,6 +48,21 @@ const userSlice = createSlice({
     setAuthenticated: (state, action: PayloadAction<boolean>) => {
       state.isAuthenticated = action.payload;
     },
+    updateConsentDetails: (state, action: PayloadAction<{
+      consentId: string;
+      consentStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED';
+      consentCreatedAt?: string;
+      consentUpdatedAt?: string;
+      consentExpiresAt?: string;
+    }>) => {
+      if (state.user) {
+        state.user.consentDetails = {
+          ...state.user.consentDetails,
+          ...action.payload,
+          consentUpdatedAt: action.payload.consentUpdatedAt || new Date().toISOString()
+        };
+      }
+    },
   },
 });
 
@@ -59,6 +74,7 @@ export const {
   setError,
   clearError,
   setAuthenticated,
+  updateConsentDetails,
 } = userSlice.actions;
 
 export default userSlice.reducer; 

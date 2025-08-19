@@ -24,6 +24,13 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  consentDetails?: {
+    consentId: string | null;
+    consentStatus: 'PENDING' | 'APPROVED' | 'REJECTED' | 'EXPIRED' | null;
+    consentCreatedAt: string | null;
+    consentUpdatedAt: string | null;
+    consentExpiresAt: string | null;
+  };
 }
 
 class AuthService {

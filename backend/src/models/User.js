@@ -41,6 +41,30 @@ const userSchema = new mongoose.Schema({
   lockUntil: {
     type: Date,
     default: null
+  },
+  // Consent details
+  consentDetails: {
+    consentId: {
+      type: String,
+      default: null
+    },
+    consentStatus: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'REJECTED', 'EXPIRED', null],
+      default: null
+    },
+    consentCreatedAt: {
+      type: Date,
+      default: null
+    },
+    consentUpdatedAt: {
+      type: Date,
+      default: null
+    },
+    consentExpiresAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true

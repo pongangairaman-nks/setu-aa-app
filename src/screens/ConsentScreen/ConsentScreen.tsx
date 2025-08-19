@@ -11,6 +11,9 @@ import { ConsentStatus } from '../../components/financial/ConsentStatus/ConsentS
 import { useConsent } from '../../hooks/useConsent';
 import { useWebView } from '../../hooks/useWebView';
 import { setuApi } from '../../services/api/setuApi';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '../../store';
+import { updateConsentDetails } from '../../store/slices/userSlice';
 
 import { SandboxConsentRequest } from '../../types/api';
 import { ENV } from '../../config/environment';
@@ -20,6 +23,8 @@ type NavigationProp = NativeStackNavigationProp<TabParamList>;
 export const ConsentScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute();
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user.user);
   const { consents, loading, refreshConsents, revokeConsent } = useConsent();
   const { openWebView } = useWebView();
   const [creatingConsent, setCreatingConsent] = useState(false);
@@ -50,6 +55,19 @@ export const ConsentScreen: React.FC = () => {
       const consentRequest = await setuApi.createConsentRequest(consentData);
       console.log('✅ Consent request created:', consentRequest);
       console.log('🎯 Consent URL:', consentRequest.url);
+
+      // Store consent details in user profile before opening WebView
+      if (consentRequest.id && user) {
+        console.log('📋 Storing consent details in user profile...');
+        dispatch(updateConsentDetails({
+          consentId: consentRequest.id,
+          consentStatus: 'PENDING',
+          consentCreatedAt: new Date().toISOString(),
+          consentUpdatedAt: new Date().toISOString(),
+          consentExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours from now
+        }));
+        console.log('✅ Consent details stored in user profile');
+      }
 
       // Open WebView for consent flow
       console.log('🌐 Opening WebView with URL:', consentRequest.url);

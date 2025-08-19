@@ -161,7 +161,8 @@ router.get('/me', authenticateToken, async (req, res) => {
       id: req.user._id,
       email: req.user.email,
       name: req.user.name,
-      createdAt: req.user.createdAt
+      createdAt: req.user.createdAt,
+      consentDetails: req.user.consentDetails || null
     };
 
     res.json(userResponse);

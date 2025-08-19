@@ -1,4 +1,5 @@
 const Consent = require('../models/Consent');
+const User = require('../models/User');
 const setuService = require('../services/setuService');
 const logger = require('../utils/logger');
 
@@ -258,6 +259,27 @@ exports.consentCallback = async (req, res) => {
 
       if (consent) {
         logger.info(`Consent status updated in database: ${consentId} -> ${status}`);
+      }
+
+      // Update user's consent details
+      try {
+        // Find user by consent ID and update their consent details
+        const user = await User.findOneAndUpdate(
+          { 'consentDetails.consentId': consentId },
+          {
+            'consentDetails.consentStatus': status === "true" ? "APPROVED" : "REJECTED",
+            'consentDetails.consentUpdatedAt': new Date()
+          },
+          { new: true }
+        );
+
+        if (user) {
+          logger.info(`User consent details updated: ${user.email} -> ${status === "true" ? "APPROVED" : "REJECTED"}`);
+        } else {
+          logger.warn(`No user found with consent ID: ${consentId}`);
+        }
+      } catch (error) {
+        logger.error('Error updating user consent details:', error);
       }
     }
 
