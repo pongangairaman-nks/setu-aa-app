@@ -238,8 +238,9 @@ exports.getConsentStatus = async (req, res) => {
 
 // Consent callback endpoint - handles redirect from Setu
 exports.consentCallback = async (req, res) => {
+  console.log('req.query', req.query);
   try {
-    const { consentId, status, error } = req.query;
+    const { id:consentId, success: status, error } = req.query;
     
     logger.info(`Consent callback received - ConsentId: ${consentId}, Status: ${status}, Error: ${error}`);
 

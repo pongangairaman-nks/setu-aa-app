@@ -71,8 +71,8 @@ export const CustomWebView: React.FC<CustomWebViewProps> = ({
     }
     
     // Hide loader for specific Setu URLs that indicate the page is ready
-    if (navState.url.includes('otp') || navState.url.includes('verify') || navState.url.includes('success')) {
-      console.log('🎯 Setu OTP/verification page detected - hiding loader');
+    if (navState.url.includes('otp') || navState.url.includes('verify') || navState.url.includes('success') || navState.url.includes('consent-callback')) {
+      console.log('🎯 Setu OTP/verification/consent-callback page detected - hiding loader');
       hideLoader();
     }
     

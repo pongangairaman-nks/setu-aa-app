@@ -56,13 +56,51 @@ export const ConsentScreen: React.FC = () => {
       openWebView({
         uri: consentRequest.url,
         onSuccess: (data) => {
-          console.log('Consent created successfully:', data);
-          refreshConsents();
-          navigation.goBack();
+          console.log('✅ Consent created successfully:', data);
+          
+          // Check if we have a valid consent ID
+          if (data && data.consentId) {
+            console.log('📋 Consent ID received:', data.consentId);
+            console.log('📊 Consent status:', data.status);
+            
+            // Refresh consents to get updated status
+            refreshConsents();
+            
+            // Show success message
+            Alert.alert(
+              'Success! 🎉',
+              `Consent created successfully!\n\nConsent ID: ${data.consentId}\nStatus: ${data.status || 'ACTIVE'}`,
+              [
+                {
+                  text: 'View Accounts',
+                  onPress: () => {
+                    navigation.navigate('Accounts', { consentId: data.consentId });
+                  }
+                },
+                {
+                  text: 'OK',
+                  onPress: () => navigation.goBack()
+                }
+              ]
+            );
+          } else {
+            console.warn('⚠️ No consent ID in success data:', data);
+            Alert.alert('Warning', 'Consent created but no consent ID received. Please check your consents.');
+            refreshConsents();
+            navigation.goBack();
+          }
         },
         onError: (error) => {
-          console.error('Consent creation failed:', error);
-          Alert.alert('Error', 'Failed to create consent. Please try again.');
+          console.error('❌ Consent creation failed:', error);
+          
+          let errorMessage = 'Failed to create consent. Please try again.';
+          if (error && error.errorDescription) {
+            errorMessage = error.errorDescription;
+          } else if (error && error.error) {
+            errorMessage = `Error: ${error.error}`;
+          }
+          
+          Alert.alert('Error', errorMessage);
         },
       });
     } catch (error: any) {
