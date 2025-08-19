@@ -35,7 +35,7 @@ export const ConsentScreen: React.FC = () => {
           unit: 'MONTH',
           value: '24'
         },
-        vua: '9999999999@onemoney', // Using the VUA from your working curl
+        vua: '7530060544@onemoney', // Using the VUA from your working curl
         dataRange: {
           from: '2023-01-01T00:00:00Z',
           to: '2025-01-24T00:00:00Z'
