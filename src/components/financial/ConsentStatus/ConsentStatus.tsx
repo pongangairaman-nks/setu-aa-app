@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
+import { Button } from '../../common/Button/Button';
 import { styles } from './ConsentStatus.styles';
 import { Consent } from '../../../types/consent';
 
@@ -8,6 +9,8 @@ interface ConsentStatusProps {
   onPress?: () => void;
   showDetails?: boolean;
   isUserConsent?: boolean;
+  onRevoke?: () => void;
+  showRevokeButton?: boolean;
 }
 
 export const ConsentStatus: React.FC<ConsentStatusProps> = ({
@@ -15,6 +18,8 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
   onPress,
   showDetails = true,
   isUserConsent = false,
+  onRevoke,
+  showRevokeButton = false,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -106,6 +111,17 @@ export const ConsentStatus: React.FC<ConsentStatusProps> = ({
             ))}
           </View>
         </>
+      )}
+      {/* Revoke Button */}
+      {showRevokeButton && onRevoke && (consent.status === 'ACTIVE' || consent.status === 'APPROVED') && (
+        <View style={styles.revokeButtonContainer}>
+          <Button
+            title="Revoke Consent"
+            onPress={onRevoke}
+            variant="danger"
+            size="small"
+          />
+        </View>
       )}
     </CardComponent>
   );

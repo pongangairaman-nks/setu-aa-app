@@ -33,6 +33,7 @@ export const ConsentScreen: React.FC = () => {
   const userConsentDetails = user?.consentDetails;
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [loadingConsentDetails, setLoadingConsentDetails] = useState(false);
+  const [revokingConsent, setRevokingConsent] = useState(false);
 
   // Fetch consent details from Setu API when screen loads
   useEffect(() => {
@@ -57,6 +58,62 @@ export const ConsentScreen: React.FC = () => {
 
     fetchConsentDetails();
   }, [userConsentDetails?.consentId]);
+
+  const handleRevokeConsent = async () => {
+    if (!userConsentDetails?.consentId) {
+      Alert.alert('Error', 'No consent ID found');
+      return;
+    }
+
+    Alert.alert(
+      'Revoke Consent',
+      'Are you sure you want to revoke this consent? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Revoke',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setRevokingConsent(true);
+              console.log('🗑️ Revoking consent:', userConsentDetails.consentId);
+              
+              const result = await setuApi.revokeConsentRequest(userConsentDetails.consentId);
+              console.log('✅ Consent revoked successfully:', result);
+              
+              // Update local state
+              setConsentDetails(prev => prev ? { ...prev, status: 'REVOKED' } : null);
+              
+              // Update user consent details in Redux
+              dispatch(updateConsentDetails({
+                consentId: userConsentDetails.consentId,
+                consentStatus: 'REVOKED',
+                consentUpdatedAt: new Date().toISOString()
+              }));
+              
+              Alert.alert(
+                '✅ Consent Revoked',
+                'Your consent has been successfully revoked. You will need to create a new consent to access financial data.',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              console.error('❌ Error revoking consent:', error);
+              Alert.alert(
+                '❌ Revoke Failed',
+                'Failed to revoke consent. Please try again later.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setRevokingConsent(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleCreateConsent = async () => {
     try {
@@ -171,28 +228,28 @@ export const ConsentScreen: React.FC = () => {
     }
   };
 
-  const handleRevokeConsent = async (consentId: string) => {
-    Alert.alert(
-      'Revoke Consent',
-      'Are you sure you want to revoke this consent? This action cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Revoke',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await revokeConsent(consentId);
-              Alert.alert('Success', 'Consent revoked successfully.');
-            } catch (error) {
-              console.error('Error revoking consent:', error);
-              Alert.alert('Error', 'Failed to revoke consent. Please try again.');
-            }
-          },
-        },
-      ]
-    );
-  };
+  // const handleRevokeConsent = async (consentId: string) => {
+  //   Alert.alert(
+  //     'Revoke Consent',
+  //     'Are you sure you want to revoke this consent? This action cannot be undone.',
+  //     [
+  //       { text: 'Cancel', style: 'cancel' },
+  //       {
+  //         text: 'Revoke',
+  //         style: 'destructive',
+  //         onPress: async () => {
+  //           try {
+  //             await revokeConsent(consentId);
+  //             Alert.alert('Success', 'Consent revoked successfully.');
+  //           } catch (error) {
+  //             console.error('Error revoking consent:', error);
+  //             Alert.alert('Error', 'Failed to revoke consent. Please try again.');
+  //           }
+  //         },
+  //       },
+  //     ]
+  //   );
+  // };
 
   if (loading) {
     return <LoadingSpinner fullScreen text="Loading consents..." />;
@@ -247,6 +304,8 @@ export const ConsentScreen: React.FC = () => {
                     }
                   }}
                   isUserConsent={true}
+                  onRevoke={handleRevokeConsent}
+                  showRevokeButton={true}
                 />
               ) : (
                 <ConsentStatus
@@ -268,6 +327,8 @@ export const ConsentScreen: React.FC = () => {
                     }
                   }}
                   isUserConsent={true}
+                  onRevoke={handleRevokeConsent}
+                  showRevokeButton={true}
                 />
               )}
             </View>

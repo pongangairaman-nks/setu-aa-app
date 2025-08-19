@@ -170,7 +170,32 @@ router.post('/consents/:consentId/revoke', async (req, res) => {
   try {
     const { consentId } = req.params;
     logger.info('Revoking Setu consent:', consentId);
+    
+    // Call Setu API to revoke consent
     const result = await makeSetuRequest('POST', `/v2/consents/${consentId}/revoke`);
+    
+    // If revocation is successful, update user's consent status in database
+    if (result && result.status === 'REVOKED') {
+      try {
+        const user = await User.findOneAndUpdate(
+          { 'consentDetails.consentId': consentId },
+          {
+            'consentDetails.consentStatus': 'REVOKED',
+            'consentDetails.consentUpdatedAt': new Date()
+          },
+          { new: true }
+        );
+
+        if (user) {
+          logger.info(`User consent status updated to REVOKED: ${user.email}`);
+        } else {
+          logger.warn(`No user found with consent ID: ${consentId}`);
+        }
+      } catch (updateError) {
+        logger.error('Error updating user consent status:', updateError);
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     logger.error('Error revoking consent:', error.message);
