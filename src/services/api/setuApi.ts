@@ -282,6 +282,26 @@ export class SetuApi {
     }
   }
 
+  // Get user's financial data from backend
+  async getUserData(): Promise<any> {
+    try {
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('👤 Fetching user financial data from backend...');
+      }
+      
+      const response = await apiClient.get<any>('/setu/user-data');
+      
+      if (ENV.IS_DEVELOPMENT) {
+        console.log('✅ User data response:', response);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch user data:', error);
+      throw error;
+    }
+  }
+
   // Get API configuration info
   getApiInfo() {
     return {

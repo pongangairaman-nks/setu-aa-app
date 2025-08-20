@@ -6,43 +6,46 @@ import { styles } from './AccountsScreen.styles';
 import { Button } from '../../components/common/Button/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner/LoadingSpinner';
 import { AccountCard } from '../../components/financial/AccountCard/AccountCard';
-import { useAccounts } from '../../hooks/useAccounts';
+import { useUserData } from '../../hooks/useUserData';
 import { setuApi } from '../../services/api/setuApi';
 
 export const AccountsScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { accounts, loading, refreshAccounts, fetchAccounts } = useAccounts();
-  const [fetchingAccounts, setFetchingAccounts] = useState(false);
+  const { 
+    accounts, 
+    loading, 
+    error, 
+    fetchUserData, 
+    refreshUserData, 
+    hasAccounts,
+    summary 
+  } = useUserData();
+  const [fetchingData, setFetchingData] = useState(false);
 
-  const handleFetchAccounts = async () => {
+  const handleFetchData = async () => {
     try {
-      setFetchingAccounts(true);
+      setFetchingData(true);
       
-      // Get active consent ID from route params or use the first active consent
-      const consentId = route.params?.consentId;
-      
-      if (!consentId) {
-        Alert.alert('Error', 'No active consent found. Please create a consent first.');
-        return;
-      }
-
-      await fetchAccounts(consentId);
-      Alert.alert('Success', 'Accounts fetched successfully!');
+      await fetchUserData();
+      Alert.alert('Success', 'Financial data fetched successfully!');
     } catch (error) {
-      console.error('Error fetching accounts:', error);
-      Alert.alert('Error', 'Failed to fetch accounts. Please try again.');
+      console.error('Error fetching financial data:', error);
+      Alert.alert('Error', 'Failed to fetch financial data. Please try again.');
     } finally {
-      setFetchingAccounts(false);
+      setFetchingData(false);
     }
   };
 
-  const handleViewTransactions = (accountId: string) => {
-    navigation.navigate('Transactions' as never, { accountId } as never);
+  const handleViewTransactions = (linkRefNumber: string) => {
+    (navigation as any).navigate('Transactions', { 
+      linkRefNumber,
+      accountId: linkRefNumber 
+    });
   };
 
   const handleRefresh = () => {
-    refreshAccounts();
+    refreshUserData();
   };
 
   if (loading) {
@@ -66,32 +69,41 @@ export const AccountsScreen: React.FC = () => {
       >
         <View style={styles.actions}>
           <Button
-            title="Fetch Latest Accounts"
-            onPress={handleFetchAccounts}
+            title="Fetch Financial Data"
+            onPress={handleFetchData}
             variant="primary"
             size="large"
-            loading={fetchingAccounts}
+            loading={fetchingData}
           />
         </View>
 
         <View style={styles.section}>
-          {accounts.length > 0 ? (
-            accounts.map((account) => (
+          {hasAccounts ? (
+            accounts.map((account: any) => (
               <AccountCard
-                key={account.accountId}
-                account={account}
-                onPress={() => handleViewTransactions(account.accountId)}
+                key={account.linkRefNumber}
+                account={{
+                  accountId: account.linkRefNumber,
+                  accountName: account.maskedAccNumber,
+                  accountNumber: account.maskedAccNumber,
+                  bankName: account.fiType || 'Bank',
+                  accountType: account.accType,
+                  balance: account.summary?.currentBalance || 0,
+                  status: account.status,
+                  lastUpdated: account.lastUpdated
+                }}
+                onPress={() => handleViewTransactions(account.linkRefNumber)}
               />
             ))
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No accounts found</Text>
               <Text style={styles.emptySubtext}>
-                Create a consent and fetch accounts to get started
+                Create a consent and fetch financial data to get started
               </Text>
               <Button
                 title="Create Consent"
-                onPress={() => navigation.navigate('Consent' as never)}
+                onPress={() => (navigation as any).navigate('Consent')}
                 variant="outline"
                 size="medium"
               />

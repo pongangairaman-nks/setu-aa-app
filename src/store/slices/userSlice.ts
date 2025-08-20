@@ -63,6 +63,20 @@ const userSlice = createSlice({
         };
       }
     },
+    updateUserFinancialData: (state, action: PayloadAction<{
+      profile?: any;
+      accounts?: any[];
+      transactions?: any[];
+    }>) => {
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          profile: action.payload.profile !== undefined ? action.payload.profile : state.user.profile,
+          accounts: action.payload.accounts !== undefined ? action.payload.accounts : state.user.accounts,
+          transactions: action.payload.transactions !== undefined ? action.payload.transactions : state.user.transactions,
+        };
+      }
+    },
   },
 });
 
@@ -75,6 +89,7 @@ export const {
   clearError,
   setAuthenticated,
   updateConsentDetails,
+  updateUserFinancialData,
 } = userSlice.actions;
 
 export default userSlice.reducer; 

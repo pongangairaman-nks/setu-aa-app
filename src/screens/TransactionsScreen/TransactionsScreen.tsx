@@ -6,44 +6,48 @@ import { styles } from './TransactionsScreen.styles';
 import { Button } from '../../components/common/Button/Button';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner/LoadingSpinner';
 import { TransactionItem } from '../../components/financial/TransactionItem/TransactionItem';
-import { useTransactions } from '../../hooks/useTransactions';
+import { useUserData } from '../../hooks/useUserData';
 import { setuApi } from '../../services/api/setuApi';
 
 export const TransactionsScreen: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { transactions, loading, refreshTransactions, fetchTransactions } = useTransactions();
-  const [fetchingTransactions, setFetchingTransactions] = useState(false);
+  const { 
+    transactions, 
+    loading, 
+    error, 
+    fetchUserData, 
+    refreshUserData, 
+    getTransactionsByAccount,
+    hasTransactions,
+    summary 
+  } = useUserData();
+  const [fetchingData, setFetchingData] = useState(false);
 
   const accountId = route.params?.accountId;
-  const consentId = route.params?.consentId;
+  const linkRefNumber = route.params?.linkRefNumber;
 
-  const handleFetchTransactions = async () => {
+  // Filter transactions by account if accountId is provided
+  const filteredTransactions = accountId && linkRefNumber 
+    ? getTransactionsByAccount(linkRefNumber)
+    : transactions;
+
+  const handleFetchData = async () => {
     try {
-      setFetchingTransactions(true);
+      setFetchingData(true);
       
-      if (!accountId) {
-        Alert.alert('Error', 'No account selected. Please select an account first.');
-        return;
-      }
-
-      if (!consentId) {
-        Alert.alert('Error', 'No consent ID found. Please create a consent first.');
-        return;
-      }
-
-      await fetchTransactions(accountId, consentId);
-      Alert.alert('Success', 'Transactions fetched successfully!');
+      await fetchUserData();
+      Alert.alert('Success', 'Financial data fetched successfully!');
     } catch (error) {
-      console.error('Error fetching transactions:', error);
-      Alert.alert('Error', 'Failed to fetch transactions. Please try again.');
+      console.error('Error fetching financial data:', error);
+      Alert.alert('Error', 'Failed to fetch financial data. Please try again.');
     } finally {
-      setFetchingTransactions(false);
+      setFetchingData(false);
     }
   };
 
   const handleRefresh = () => {
-    refreshTransactions();
+    refreshUserData();
   };
 
   if (loading) {
@@ -67,20 +71,34 @@ export const TransactionsScreen: React.FC = () => {
       >
         <View style={styles.actions}>
           <Button
-            title="Fetch Latest Transactions"
-            onPress={handleFetchTransactions}
+            title="Fetch Financial Data"
+            onPress={handleFetchData}
             variant="primary"
             size="large"
-            loading={fetchingTransactions}
+            loading={fetchingData}
           />
         </View>
 
         <View style={styles.section}>
-          {transactions.length > 0 ? (
-            transactions.map((transaction) => (
+          {hasTransactions && filteredTransactions.length > 0 ? (
+            filteredTransactions.map((transaction: any) => (
               <TransactionItem
                 key={transaction.transactionId}
-                transaction={transaction}
+                transaction={{
+                  transactionId: transaction.transactionId,
+                  accountId: transaction.linkRefNumber,
+                  accountNumber: transaction.linkRefNumber,
+                  description: transaction.description,
+                  amount: transaction.amount,
+                  transactionType: transaction.type,
+                  transactionDate: transaction.timestamp,
+                  balance: transaction.currentBalance,
+                  status: transaction.status,
+                  category: transaction.mode,
+                  merchantName: transaction.description,
+                  referenceNumber: transaction.reference,
+                  lastUpdated: transaction.lastUpdated
+                }}
                 showAccount={!accountId}
               />
             ))
@@ -88,7 +106,7 @@ export const TransactionsScreen: React.FC = () => {
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No transactions found</Text>
               <Text style={styles.emptySubtext}>
-                Fetch transactions to view your transaction history
+                Fetch financial data to view your transaction history
               </Text>
             </View>
           )}

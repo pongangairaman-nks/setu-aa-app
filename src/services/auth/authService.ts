@@ -31,6 +31,9 @@ export interface User {
     consentUpdatedAt: string | null;
     consentExpiresAt: string | null;
   };
+  profile?: any;
+  accounts?: any[];
+  transactions?: any[];
 }
 
 class AuthService {
