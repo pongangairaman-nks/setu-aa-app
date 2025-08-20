@@ -385,6 +385,22 @@ class SetuService {
     }
   }
 
+  // Fetch financial data using session ID (called by webhook)
+  async fetchFinancialDataBySessionId(sessionId) {
+    try {
+      logger.info(`Fetching financial data for session: ${sessionId}`);
+      
+      const client = await this.createAuthenticatedClient();
+      const response = await client.get(`/v2/sessions/${sessionId}`);
+      
+      logger.info(`Financial data fetched for session: ${sessionId}`);
+      return response.data;
+    } catch (error) {
+      logger.error(`Error fetching financial data for session ${sessionId}:`, error);
+      throw error;
+    }
+  }
+
   // Validate webhook signature
   validateWebhookSignature(payload, signature) {
     try {

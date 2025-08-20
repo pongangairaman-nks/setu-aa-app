@@ -162,7 +162,10 @@ router.get('/me', authenticateToken, async (req, res) => {
       email: req.user.email,
       name: req.user.name,
       createdAt: req.user.createdAt,
-      consentDetails: req.user.consentDetails || null
+      consentDetails: req.user.consentDetails || null,
+      profile: req.user.profile || null,
+      accounts: req.user.accounts || [],
+      transactions: req.user.transactions || []
     };
 
     res.json(userResponse);

@@ -22,7 +22,7 @@ const verifyWebhookSignature = (payload, signature, secret) => {
 exports.handleSetuWebhook = async (req, res) => {
   try {
     const { type } = req.body;
-    
+    console.log('🔄 Received Setu webhook:', req.body);
     logger.info(`Received Setu webhook: ${type}`);
 
     // Route to appropriate handler based on webhook type
@@ -56,6 +56,7 @@ exports.handleSetuWebhook = async (req, res) => {
 // Handle consent status update webhook (CONSENT_STATUS_UPDATE)
 exports.handleConsentWebhook = async (req, res) => {
   try {
+    console.log('🔄 Received Setu webhook:', req.body);
     const { type, data, signature, consentId, timestamp, success, error } = req.body;
     
     logger.info(`Received webhook: ${type} for consent: ${consentId}`);
@@ -279,13 +280,89 @@ exports.handleDataWebhook = async (req, res) => {
         }
       }
 
-      // If session is completed, trigger data fetch
+      // If session is completed, fetch financial data using session ID
       if (status === 'COMPLETED') {
         try {
-          await setuService.fetchAndStoreData(consentId, null);
-          logger.info(`Data fetched for completed session: ${dataSessionId}`);
+          logger.info(`Fetching financial data for completed session: ${dataSessionId}`);
+          
+          // Use the session ID to fetch financial data from Setu
+          const financialData = await setuService.fetchFinancialDataBySessionId(dataSessionId);
+          
+          if (financialData && financialData.fips) {
+            // Find user by consent ID
+            const user = await User.findOne({ 'consentDetails.consentId': consentId });
+            
+            if (user) {
+              let allAccounts = [];
+              let allTransactions = [];
+              let userProfile = null;
+              
+              // Process and store the financial data directly in user object
+              for (const fip of financialData.fips) {
+                for (const account of fip.accounts) {
+                  // Extract profile information from first account
+                  if (!userProfile && account.data?.profile) {
+                    userProfile = account.data.profile;
+                  }
+                  
+                  // Prepare account data
+                  const accountData = {
+                    linkRefNumber: account.linkRefNumber,
+                    maskedAccNumber: account.maskedAccNumber,
+                    accType: account.accType,
+                    fiType: account.fiType,
+                    fipId: account.fipId,
+                    fiStatus: account.FIStatus,
+                    fiStatusDescription: account.description,
+                    status: 'ACTIVE',
+                    lastUpdated: new Date(),
+                    // Include account summary data
+                    summary: account.data?.summary || null,
+                    profile: account.data?.profile || null
+                  };
+                  
+                  allAccounts.push(accountData);
+                  
+                  // Process transactions if available
+                  if (account.data?.transactions?.transaction && Array.isArray(account.data.transactions.transaction)) {
+                    for (const transaction of account.data.transactions.transaction) {
+                      const transactionData = {
+                        linkRefNumber: account.linkRefNumber,
+                        transactionId: transaction.txnId,
+                        amount: transaction.amount,
+                        currency: transaction.currency || 'INR',
+                        type: transaction.type,
+                        description: transaction.narration,
+                        timestamp: new Date(transaction.transactionTimestamp),
+                        valueDate: new Date(transaction.valueDate),
+                        status: 'SUCCESS',
+                        mode: transaction.mode,
+                        reference: transaction.reference,
+                        currentBalance: transaction.currentBalance,
+                        lastUpdated: new Date()
+                      };
+                      
+                      allTransactions.push(transactionData);
+                    }
+                  }
+                }
+              }
+              
+              // Update user with financial data
+              await User.findByIdAndUpdate(user._id, {
+                profile: userProfile,
+                accounts: allAccounts,
+                transactions: allTransactions
+              });
+              
+              logger.info(`Financial data stored in user object for session: ${dataSessionId}`);
+              logger.info(`Stored ${allAccounts.length} accounts and ${allTransactions.length} transactions`);
+            } else {
+              logger.error(`User not found for consent ID: ${consentId}`);
+            }
+          }
         } catch (error) {
-          logger.error(`Error fetching data for session ${dataSessionId}:`, error);
+          logger.error(`Error fetching financial data for session ${dataSessionId}:`, error);
         }
       }
     }

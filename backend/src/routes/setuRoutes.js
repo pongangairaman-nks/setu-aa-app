@@ -356,6 +356,49 @@ router.get('/fips', async (req, res) => {
   }
 });
 
+// Get user's financial data (from user object)
+router.get('/user-data', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(400).json({
+        error: { message: 'User ID not found in request' }
+      });
+    }
+
+    logger.info('Fetching user data for user ID:', userId);
+
+    // Get user with financial data
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        consentId: user.consentDetails?.consentId,
+        consentStatus: user.consentDetails?.consentStatus,
+        profile: user.profile,
+        accounts: user.accounts || [],
+        transactions: user.transactions || [],
+        summary: {
+          totalAccounts: user.accounts?.length || 0,
+          totalTransactions: user.transactions?.length || 0,
+          lastDataFetch: user.consentDetails?.consentUpdatedAt
+        }
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching user data:', error.message);
+    res.status(500).json({
+      error: { message: 'Failed to fetch user data' }
+    });
+  }
+});
+
 // Health check for Setu API
 router.get('/health', async (req, res) => {
   try {

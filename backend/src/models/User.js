@@ -65,6 +65,19 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+  // Financial data stored directly in user object
+  profile: {
+    type: Object,
+    default: null
+  },
+  accounts: {
+    type: Array,
+    default: []
+  },
+  transactions: {
+    type: Array,
+    default: []
   }
 }, {
   timestamps: true
