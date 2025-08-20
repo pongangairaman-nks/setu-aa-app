@@ -132,8 +132,8 @@ export const ConsentScreen: React.FC = () => {
       fromDate.setMonth(fromDate.getMonth() - 6);
 
       const dataRange = {
-        from: fromDate.toISOString(),
-        to: toDate.toISOString()
+        from: "2025-06-10T00:00:00.000Z",
+        to: "2025-06-20T00:00:00.000Z"
       };
 
       const session = await createDataSession(userConsentDetails.consentId, dataRange, 'json');
@@ -172,7 +172,7 @@ export const ConsentScreen: React.FC = () => {
         },
         "frequency": {
           "unit": "MONTH",
-          "value": 1
+          "value": 24
         },
         "dataLife": {
           "unit": "MONTH",
