@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, Alert } from 'react-native';
+import { View, Text, ScrollView, Alert, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,7 +14,8 @@ import { useWebView } from '../../hooks/useWebView';
 import { setuApi } from '../../services/api/setuApi';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../store';
-import { updateConsentDetails } from '../../store/slices/userSlice';
+import { updateConsentDetails, setUser } from '../../store/slices/userSlice';
+import { apiClient } from '../../services/api/apiClient';
 
 import { SandboxConsentRequest } from '../../types/api';
 import { ENV } from '../../config/environment';
@@ -36,6 +37,7 @@ export const ConsentScreen: React.FC = () => {
   const [consentDetails, setConsentDetails] = useState<any>(null);
   const [loadingConsentDetails, setLoadingConsentDetails] = useState(false);
   const [revokingConsent, setRevokingConsent] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Fetch consent details from Setu API when screen loads
   useEffect(() => {
@@ -60,6 +62,38 @@ export const ConsentScreen: React.FC = () => {
 
     fetchConsentDetails();
   }, [userConsentDetails?.consentId]);
+
+  const handleRefresh = async () => {
+    console.log('🔄 Refresh triggered in ConsentScreen');
+    console.log('📊 Current loading states:', { refreshing, loading, loadingConsentDetails });
+    try {
+      setRefreshing(true);
+      
+      // Fetch user profile
+      const response = await apiClient.get('/auth/me');
+      dispatch(setUser(response as any));
+      console.log('✅ User profile refreshed');
+      
+      // Refresh consents
+      refreshConsents();
+      
+      // Re-fetch consent details if user has consent (use response data directly)
+      const updatedUserConsentId = (response as any)?.consentDetails?.consentId;
+      if (updatedUserConsentId) {
+        try {
+          const details = await setuApi.getConsentDetails(updatedUserConsentId);
+          setConsentDetails(details);
+          console.log('✅ Consent details refreshed');
+        } catch (error) {
+          console.error('❌ Error refreshing consent details:', error);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleRevokeConsent = async () => {
     if (!userConsentDetails?.consentId) {
@@ -164,15 +198,15 @@ export const ConsentScreen: React.FC = () => {
       const consentData: any = {
         "consentDuration": {
           "unit": "MONTH",
-          "value": 12
+          "value": 6
         },
         "dataRange": {
-          "from": "2025-06-01T00:00:00Z",
-          "to": "2025-07-01T00:00:00Z"
+          "from": "2025-06-12T00:00:00Z",
+          "to": "2025-07-04T00:00:00Z"
         },
         "frequency": {
           "unit": "MONTH",
-          "value": 24
+          "value": 28
         },
         "dataLife": {
           "unit": "MONTH",
@@ -310,7 +344,15 @@ export const ConsentScreen: React.FC = () => {
         <Text style={styles.subtitle}>Manage your data sharing permissions</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+          />
+        }
+      >
         <View style={styles.actions}>
           <Button
             title="Create New Consent"

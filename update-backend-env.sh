@@ -37,9 +37,9 @@ JWT_EXPIRES_IN=7d
 
 # Setu API Configuration - Updated with working credentials
 SETU_BASE_URL=https://fiu.setu.co
-SETU_CLIENT_ID=b615a43a-e779-4d95-9ddb-768c7666d96b
-SETU_CLIENT_SECRET=eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM
-SETU_PRODUCT_ID=e02807a8-2588-4306-83d2-5eb1e615abda
+SETU_CLIENT_ID=5b2642c9-dfd8-4457-90fb-6f495d53cdd6
+SETU_CLIENT_SECRET=Ft6D9OpEKoyK1cg8okFdRZWIXvdYv8Zu
+SETU_PRODUCT_ID=d0bcfcab-38f4-4723-8390-55355b1f0627
 SETU_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----
 SETU_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\nYour public key here\n-----END PUBLIC KEY-----
 SETU_AA_HANDLE=your-aa-handle
@@ -86,9 +86,9 @@ ENVFILE
     
     echo "📋 Updated Setu Configuration:"
     echo "SETU_BASE_URL: https://fiu.setu.co"
-    echo "SETU_CLIENT_ID: b615a43a-e779-4d95-9ddb-768c7666d96b"
-    echo "SETU_CLIENT_SECRET: eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM"
-    echo "SETU_PRODUCT_ID: e02807a8-2588-4306-83d2-5eb1e615abda"
+    echo "SETU_CLIENT_ID: 5b2642c9-dfd8-4457-90fb-6f495d53cdd6"
+    echo "SETU_CLIENT_SECRET: Ft6D9OpEKoyK1cg8okFdRZWIXvdYv8Zu"
+    echo "SETU_PRODUCT_ID: d0bcfcab-38f4-4723-8390-55355b1f0627"
 EOF
 
 echo -e "\n${GREEN}✅ Backend environment updated successfully!${NC}"

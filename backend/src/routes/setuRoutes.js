@@ -9,7 +9,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 // Setu API configuration
 const SETU_CONFIG = {
   API_URL: process.env.SETU_BASE_URL || 'https://fiu-sandbox.setu.co',
-  PRODUCT_ID: process.env.SETU_PRODUCT_ID || 'e02807a8-2588-4306-83d2-5eb1e615abda'
+  PRODUCT_ID: process.env.SETU_PRODUCT_ID || 'd0bcfcab-38f4-4723-8390-55355b1f0627'
 };
 
 
@@ -224,7 +224,7 @@ router.get('/sessions/:sessionId/data', authenticateToken, async (req, res) => {
     const { sessionId } = req.params;
     logger.info('Fetching FI data for session:', sessionId);
     
-    const result = await makeSetuRequest('GET', `/v2/sessions/${sessionId}/data`);
+    const result = await makeSetuRequest('GET', `/v2/sessions/${sessionId}`);
     res.json(result);
   } catch (error) {
     logger.error('Error fetching FI data:', error.message);

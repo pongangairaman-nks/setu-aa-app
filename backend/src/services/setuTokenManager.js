@@ -4,8 +4,8 @@ const logger = require('../utils/logger');
 // Setu API configuration
 const SETU_CONFIG = {
   AUTH_URL: process.env.SETU_AUTH_URL || 'https://orgservice-prod.setu.co',
-  CLIENT_ID: process.env.SETU_CLIENT_ID || 'b615a43a-e779-4d95-9ddb-768c7666d96b',
-  CLIENT_SECRET: process.env.SETU_CLIENT_SECRET || 'eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM'
+  CLIENT_ID: process.env.SETU_CLIENT_ID || '5b2642c9-dfd8-4457-90fb-6f495d53cdd6',
+  CLIENT_SECRET: process.env.SETU_CLIENT_SECRET || 'Ft6D9OpEKoyK1cg8okFdRZWIXvdYv8Zu'
 };
 
 class SetuTokenManager {

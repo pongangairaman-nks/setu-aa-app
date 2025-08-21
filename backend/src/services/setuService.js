@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const Account = require('../models/Account');
 const Transaction = require('../models/Transaction');
+const setuTokenManager = require('./setuTokenManager');
 
 class SetuService {
   constructor() {
@@ -390,8 +391,25 @@ class SetuService {
     try {
       logger.info(`Fetching financial data for session: ${sessionId}`);
       
-      const client = await this.createAuthenticatedClient();
-      const response = await client.get(`/v2/sessions/${sessionId}`);
+      // Use sandbox API for fetching financial data
+      const sandboxBaseURL = 'https://fiu-sandbox.setu.co';
+      const productInstanceId = process.env.SETU_PRODUCT_INSTANCE_ID || 'd0bcfcab-38f4-4723-8390-55355b1f0627';
+      
+      // Get proper Setu token from token manager
+      const token = await setuTokenManager.getValidToken();
+      
+      logger.info(`Using sandbox API: ${sandboxBaseURL}/v2/sessions/${sessionId}`);
+      logger.info(`Product Instance ID: ${productInstanceId}`);
+      logger.info(`Using Setu token: ${token.substring(0, 20)}...`);
+      
+      const response = await axios.get(`${sandboxBaseURL}/v2/sessions/${sessionId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'x-product-instance-id': productInstanceId
+        },
+        timeout: 30000
+      });
       
       logger.info(`Financial data fetched for session: ${sessionId}`);
       return response.data;

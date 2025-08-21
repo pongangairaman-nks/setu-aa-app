@@ -29,9 +29,9 @@ export const ENV = {
   // Setu API Configuration (direct to Setu)
   SETU_API_BASE_URL: process.env.REACT_APP_SETU_API_BASE_URL || config.SETU_API_BASE_URL,
   SETU_BASE_URL: process.env.REACT_APP_SETU_BASE_URL || 'https://fiu-sandbox.setu.co', // Sandbox
-  SETU_CLIENT_ID: process.env.REACT_APP_SETU_CLIENT_ID || 'b615a43a-e779-4d95-9ddb-768c7666d96b',
-  SETU_CLIENT_SECRET: process.env.REACT_APP_SETU_CLIENT_SECRET || 'eY6l9Wbdm488SdS3lbeznFwDLtsbVvQM',
-  SETU_PRODUCT_ID: process.env.REACT_APP_SETU_PRODUCT_ID || 'e02807a8-2588-4306-83d2-5eb1e615abda',
+  SETU_CLIENT_ID: process.env.REACT_APP_SETU_CLIENT_ID || '5b2642c9-dfd8-4457-90fb-6f495d53cdd6',
+  SETU_CLIENT_SECRET: process.env.REACT_APP_SETU_CLIENT_SECRET || 'Ft6D9OpEKoyK1cg8okFdRZWIXvdYv8Zu',
+  SETU_PRODUCT_ID: process.env.REACT_APP_SETU_PRODUCT_ID || 'd0bcfcab-38f4-4723-8390-55355b1f0627',
   
   // App Configuration
   APP_NAME: process.env.REACT_APP_APP_NAME || 'Setu AA Mobile App',
