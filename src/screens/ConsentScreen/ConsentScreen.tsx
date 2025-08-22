@@ -166,8 +166,8 @@ export const ConsentScreen: React.FC = () => {
       fromDate.setMonth(fromDate.getMonth() - 6);
 
       const dataRange = {
-        from: "2025-06-10T00:00:00.000Z",
-        to: "2025-06-20T00:00:00.000Z"
+        from: "2025-06-13T00:00:00.000Z",
+        to: "2025-07-03T00:00:00.000Z"
       };
 
       const session = await createDataSession(userConsentDetails.consentId, dataRange, 'json');
